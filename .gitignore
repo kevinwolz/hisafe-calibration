@@ -2,6 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-simulations/*
-raw_data/*
-output/*
+simulations/
+raw_data/
+output/plots/
