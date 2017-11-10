@@ -3,7 +3,7 @@
 ### Author: Kevin J. Wolz
 
 ## MODELED DATA
-hisafe.trees <- hop$annual
+hisafe.trees <- hop$trees
 
 ## FIELD DATA
 trees.raw <- as.tibble(read.csv(paste0(input.path, "restinclieres_tree_biometrics.csv"), stringsAsFactors = FALSE))

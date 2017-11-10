@@ -21,6 +21,10 @@ log <- run_hisafe(hip)
 hop <- read_hisafe(hip)
 
 ## DIAGNOSTICS
-diag_hisafe_ts(hop, "annual")
-diag_hisafe_ts(hop, "daily")
+diag_hisafe_ts(hop, "annualtree")
+diag_hisafe_ts(hop, "annualcrop")
+diag_hisafe_ts(hop, "annualplot")
+diag_hisafe_ts(hop, "trees")
+diag_hisafe_ts(hop, "plot")
+diag_hisafe_ts(hop, "climate")
 diag_hisafe_monthcells(hop)
