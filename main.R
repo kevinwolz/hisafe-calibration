@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "restinclieres-A2"
+NAME <- "calibration"
 RUN.SIMU <- TRUE
 
 ## REQUIRED LIBRARIES
@@ -19,9 +19,9 @@ plot.path  <- "./output/plots/"
 data.path  <- "./output/processed_data/"
 
 ## SCRIPTS
-if(RUN.SIMU) {
-  source("simulation.R")
-} else {
-  hop <- read_hisafe(path = "./simulations", simu.name = "restinclieres-A2")
-}
-source("trees.R")
+# if(RUN.SIMU) {
+#   source("simulation.R")
+# } else {
+#   hop <- read_hisafe(path = "./simulations", simu.name = "restinclieres-A2")
+# }
+# source("trees.R")
