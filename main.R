@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration"
+NAME     <- "calibration_20171118"
 RUN.SIMU <- TRUE
 
 ## REQUIRED LIBRARIES
@@ -15,6 +15,7 @@ library(lubridate)
 
 ## PATHS
 input.path <- "./raw_data/"
+simu.path  <- "./simulations/"
 plot.path  <- "./output/plots/"
 data.path  <- "./output/processed_data/"
 
