@@ -3,7 +3,7 @@
 ### Author: Kevin J. Wolz
 
 ## MODELED DATA
-hisafe.trees <- hop$trees
+hisafe.AF.trees <- dplyr::filter(face$trees, System == "Agroforestry")
 
 ## FIELD DATA
 trees.raw <- as.tibble(read.csv(paste0(input.path, "restinclieres_tree_biometrics.csv"), stringsAsFactors = FALSE))

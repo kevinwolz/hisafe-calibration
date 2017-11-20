@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME     <- "calibration_20171118"
+NAME     <- "calibration_20171119"
 RUN.SIMU <- TRUE
 
 ## REQUIRED LIBRARIES
@@ -15,14 +15,10 @@ library(lubridate)
 
 ## PATHS
 input.path <- "./raw_data/"
-simu.path  <- "./simulations/"
+simulation.path  <- "./simulations/"
 plot.path  <- "./output/plots/"
 data.path  <- "./output/processed_data/"
 
 ## SCRIPTS
-# if(RUN.SIMU) {
-#   source("simulation.R")
-# } else {
-#   hop <- read_hisafe(path = "./simulations", simu.name = "restinclieres-A2")
-# }
+# source("simulation.R")
 # source("trees.R")

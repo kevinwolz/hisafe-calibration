@@ -2,16 +2,16 @@
 ### SIMULATION
 ### Author: Kevin J. Wolz
 
-PATH     <- paste0(simu.path, NAME)
-PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")
-WEATHER  <- R.utils::getAbsolutePath("./raw_data/restincl_A2-1995-2034.wth")
+PATH     <- paste0(simulation.path, NAME)
+PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells", "cells")
+WEATHER  <- "./raw_data/restincl_A2-1995-2034.wth"
 YEARS    <- 22
 
 ## DEFINE
 AF.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "agroforestry_default",
-                        SimulationName = "Agroforestry",
+                        SimulationName = "Agroforestry", #Restinclieres-A2",
                         nbSimulations  = YEARS,
                         weatherFile    = WEATHER)
 
@@ -29,34 +29,32 @@ CC.hip <- define_hisafe(path           = PATH,
                         nbSimulations  = YEARS,
                         weatherFile    = WEATHER)
 
-## BUILD
-build_hisafe(AF.hip)
-build_hisafe(FC.hip)
-build_hisafe(CC.hip)
+if(RUN.SIMU) {
+  ## BUILD
+  build_hisafe(AF.hip)
+  build_hisafe(FC.hip)
+  build_hisafe(CC.hip)
 
-## RUN
-log <- run_hisafe(path = PATH)
+  ## RUN
+  run_hisafe_exp(path      = PATH,
+                 parallel  = TRUE,
+                 num.cores = 3)
+}
 
 ## READ
-AF.hop <- read_hisafe(AF.hip)
-FC.hop <- read_hisafe(FC.hip)
-CC.hop <- read_hisafe(CC.hip)
-
-## DIAGNOSTICS
-purrr::walk2(list(AF.hop, FC.hop, CC.hop),
-             list("annualtree", "annualcrop", "annualplot", "trees", "plot", "climate"),
-             diag_hisfae_ts)
-# diag_hisafe_ts(AF.hop, "annualtree")
-# diag_hisafe_ts(AF.hop, "annualcrop")
-# diag_hisafe_ts(AF.hop, "annualplot")
-# diag_hisafe_ts(AF.hop, "trees")
-# diag_hisafe_ts(AF.hop, "plot")
-# diag_hisafe_ts(AF.hop, "climate")
-
-purrr::walk(list(AF.hop, FC.hop, CC.hop), diag_hisafe_monthcells)
-# diag_hisafe_monthcells(hop)
+AF.hop <- read_hisafe(AF.hip, profiles = PROFILES[PROFILES != "cells"])
+AF.hop <- simu_rename(AF.hop, "Agroforestry", "Restinclieres-A2")
+FC.hop <- read_hisafe(FC.hip, profiles = PROFILES[PROFILES != "cells"])
+CC.hop <- read_hisafe(CC.hip, profiles = PROFILES[PROFILES != "cells"])
 
 ## CREATE FACE
-# face <- create_face(agroforestry = AF.hop,
-#                     forestry     = FC.hop,
-#                     monocrop     = CC.hop)
+face <- create_face(agroforestry = AF.hop,
+                    forestry     = FC.hop,
+                    monocrop     = CC.hop,
+                    face.path    = PATH)
+
+## DIAGNOSTICS
+purrr::walk(as.list(PROFILES[PROFILES %in% c("annualtree", "annualplot", "trees", "plot", "climate")]),
+            diag_hisafe_ts,
+            hop = face)
+diag_hisafe_monthcells(face)
