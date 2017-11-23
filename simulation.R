@@ -3,16 +3,19 @@
 ### Author: Kevin J. Wolz
 
 PATH     <- paste0(simulation.path, NAME, "/")
-PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells", "cells")
+PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")#, "cells")
 WEATHER  <- "./raw_data/restincl_A2-1995-2034.wth"
 YEARS    <- 22
 
 ## DEFINE
 AF.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
-                        template       = "agroforestry_default",
+                        template       = "restinclieres_default",
                         SimulationName = MODELED.SITE,
                         nbSimulations  = YEARS,
+                        interCropSpecies  = "baresoil.plt",
+                        interCropItk      = "baresoil.tec",
+                        spacingWithinRows = 9,
                         weatherFile    = WEATHER)
 
 FC.hip <- define_hisafe(path           = PATH,
@@ -20,6 +23,8 @@ FC.hip <- define_hisafe(path           = PATH,
                         template       = "forestry_default",
                         SimulationName = "Forestry",
                         nbSimulations  = YEARS,
+                        interCropSpecies = "baresoil.plt",
+                        interCropItk     = "baresoil.tec",
                         weatherFile    = WEATHER)
 
 CC.hip <- define_hisafe(path           = PATH,

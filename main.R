@@ -2,11 +2,11 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME         <- "calibration_20171122"
-MODELED.SITE <- "AF-Restinclieres-A2"
+NAME         <- "calibration_20171123_2"
+MODELED.SITE <- "Restinclieres-A2"
 FIELD.SITE   <- "Restinclieres-A2"
 
-RUN.SIMU  <- FALSE
+RUN.SIMU  <- TRUE
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
