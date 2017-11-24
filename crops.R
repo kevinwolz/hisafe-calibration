@@ -4,18 +4,18 @@
 
 ## REFERENCE CELLS
 # 13x8
-# NORTH  <- c(48,49,61,62)
+# NORTH  <- c(43,44,56,57)
 # MIDDLE <- c(40,52,53,65)
-# SOUTH  <- c(43,44,56,57)
+# SOUTH  <- c(48,49,61,62)
 
 # 13x9
-NORTH  <- c(61,62)
+NORTH  <- c(56,57)
 MIDDLE <- c(53,65)
-SOUTH  <- c(56,57)
+SOUTH  <- c(61,62)
 
 CELL.IDS  <- c(NORTH, MIDDLE, SOUTH)
 REF.CELLS <- tibble(System = c(rep("Agroforestry", length(CELL.IDS)), "Monocrop"),
-                    location = c(rep(c("North", "Middle", "South"), each = 4), "Monocrop"),
+                    location = c(rep(c("North", "Middle", "South"), each = 2), "Monocrop"),
                     id = c(CELL.IDS, 1))
 
 ## MODELED CROP YIELD (raw units tons ha-1)

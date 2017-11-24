@@ -5,14 +5,14 @@
 PATH     <- paste0(simulation.path, NAME, "/")
 PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")#, "cells")
 WEATHER  <- "./raw_data/restincl_A2-1995-2034.wth"
-YEARS    <- 22
 
 ## DEFINE
 AF.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
-                        template       = "restinclieres_default",
+                        template       = "restinclieres_agroforestry",
                         SimulationName = MODELED.SITE,
-                        nbSimulations  = YEARS,
+                        mainCropSpecies  = "durum-wheat-allur-restinclieres.plt",
+                        mainCropItk      = "durum-wheat-restinclieres.tec",
                         interCropSpecies  = "baresoil.plt",
                         interCropItk      = "baresoil.tec",
                         spacingWithinRows = 9,
@@ -22,16 +22,18 @@ FC.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "forestry_default",
                         SimulationName = "Forestry",
-                        nbSimulations  = YEARS,
-                        interCropSpecies = "baresoil.plt",
-                        interCropItk     = "baresoil.tec",
+                        nbSimulations       = 22,
+                        treeLineOrientation = 100,
+                        interCropSpecies    = "baresoil.plt",
+                        interCropItk        = "baresoil.tec",
                         weatherFile    = WEATHER)
 
 CC.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
-                        template       = "monocrop_default",
+                        template       = "restinclieres_monocrop",
+                        mainCropSpecies  = "durum-wheat-allur-restinclieres.plt",
+                        mainCropItk      = "durum-wheat-restinclieres.tec",
                         SimulationName = "Monocrop",
-                        nbSimulations  = YEARS,
                         weatherFile    = WEATHER)
 
 if(RUN.SIMU) {
@@ -47,9 +49,9 @@ if(RUN.SIMU) {
 }
 
 ## READ
-AF.hop <- read_hisafe(AF.hip, profiles = PROFILES)
-FC.hop <- read_hisafe(FC.hip, profiles = PROFILES)
-CC.hop <- read_hisafe(CC.hip, profiles = PROFILES)
+AF.hop <- read_hisafe(path = PATH, simu.name = MODELED.SITE, profiles = PROFILES)
+FC.hop <- read_hisafe(path = PATH, simu.name = "Forestry", profiles = PROFILES)
+CC.hop <- read_hisafe(path = PATH, simu.name = "Monocrop", profiles = PROFILES)
 
 ## CREATE FACE
 face <- create_face(agroforestry = AF.hop,

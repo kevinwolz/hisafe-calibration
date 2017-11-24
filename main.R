@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME         <- "calibration_20171123_2"
+NAME         <- "calibration_20171124"
 MODELED.SITE <- "Restinclieres-A2"
 FIELD.SITE   <- "Restinclieres-A2"
 
