@@ -4,14 +4,14 @@
 
 ## REFERENCE CELLS
 # 13x8
-# NORTH  <- c(43,44,56,57)
+# NORTH  <- c(48,49,61,62) # RHS of Scene
 # MIDDLE <- c(40,52,53,65)
-# SOUTH  <- c(48,49,61,62)
+# SOUTH  <- c(43,44,56,57) # LHS of Scene
 
 # 13x9
-NORTH  <- c(56,57)
+NORTH  <- c(61,62) # RHS of Scene
 MIDDLE <- c(53,65)
-SOUTH  <- c(61,62)
+SOUTH  <- c(56,57) # LHS of Scene
 
 CELL.IDS  <- c(NORTH, MIDDLE, SOUTH)
 REF.CELLS <- tibble(System = c(rep("Agroforestry", length(CELL.IDS)), "Monocrop"),

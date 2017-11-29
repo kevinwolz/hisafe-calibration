@@ -10,7 +10,7 @@ modeled.trees <- face$trees %>%
   filter(Day == 15) %>%
   rename(year = Year) %>%
   rename(modeled.dbh = dbh) %>%
-  mutate(modeled.pruned.height  = (height - crownRadiusVertical) * 100) %>%
+  mutate(modeled.pruned.height = crownBaseHeight * 100) %>%
   mutate(modeled.height = height * 100) %>%
   select(year, modeled.dbh, modeled.height, modeled.pruned.height)
 

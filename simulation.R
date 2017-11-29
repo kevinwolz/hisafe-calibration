@@ -2,9 +2,10 @@
 ### SIMULATION
 ### Author: Kevin J. Wolz
 
-PATH     <- paste0(simulation.path, NAME, "/")
-PROFILES <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")#, "cells")
-WEATHER  <- "./raw_data/restincl_A2-1995-2034.wth"
+PATH        <- paste0(simulation.path, NAME, "/")
+PROFILES    <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")#, "cells")
+WEATHER     <- "./raw_data/restincl_A2-1995-2034.wth"
+CAPSIS.PATH <- "/Applications/Capsis/"
 
 ## DEFINE
 AF.hip <- define_hisafe(path           = PATH,
@@ -12,7 +13,6 @@ AF.hip <- define_hisafe(path           = PATH,
                         template       = "restinclieres_agroforestry",
                         SimulationName = MODELED.SITE,
                         mainCropSpecies  = "durum-wheat-allur-restinclieres.plt",
-                        mainCropItk      = "durum-wheat-restinclieres.tec",
                         interCropSpecies  = "baresoil.plt",
                         interCropItk      = "baresoil.tec",
                         spacingWithinRows = 9,
@@ -23,7 +23,7 @@ FC.hip <- define_hisafe(path           = PATH,
                         template       = "forestry_default",
                         SimulationName = "Forestry",
                         nbSimulations       = 22,
-                        treeLineOrientation = 100,
+                        treeLineOrientation = 80.5,
                         interCropSpecies    = "baresoil.plt",
                         interCropItk        = "baresoil.tec",
                         weatherFile    = WEATHER)
@@ -32,7 +32,6 @@ CC.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_monocrop",
                         mainCropSpecies  = "durum-wheat-allur-restinclieres.plt",
-                        mainCropItk      = "durum-wheat-restinclieres.tec",
                         SimulationName = "Monocrop",
                         weatherFile    = WEATHER)
 
@@ -43,15 +42,17 @@ if(RUN.SIMU) {
   build_hisafe(CC.hip)
 
   ## RUN
-  run_hisafe_exp(path      = PATH,
-                 parallel  = TRUE,
-                 num.cores = 3)
+  run_hisafe(path        = PATH,
+             parallel    = TRUE,
+             num.cores   = 3,
+             capsis.path = CAPSIS.PATH)
 }
 
 ## READ
-AF.hop <- read_hisafe(path = PATH, simu.name = MODELED.SITE, profiles = PROFILES)
-FC.hop <- read_hisafe(path = PATH, simu.name = "Forestry", profiles = PROFILES)
-CC.hop <- read_hisafe(path = PATH, simu.name = "Monocrop", profiles = PROFILES)
+PATH <- "/Users/kevinwolz/Desktop/hisafe_testing/plt_Talbot"
+AF.hop <- read_hisafe(path = PATH, simu.names = MODELED.SITE, profiles = PROFILES)
+FC.hop <- read_hisafe(path = PATH, simu.names = "Forestry",   profiles = PROFILES)
+CC.hop <- read_hisafe(path = PATH, simu.names = "Monocrop",   profiles = PROFILES)
 
 ## CREATE FACE
 face <- create_face(agroforestry = AF.hop,
