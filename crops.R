@@ -23,6 +23,8 @@ modeled.yield <- face$annualcrop %>%
   filter(System != "Forestry") %>%
   filter(SimulationName %in% c("Monocrop", MODELED.SITE)) %>%
   select(System, Year, id, x, y, yieldMax) %>%
+  mutate(Year = Year - 1) %>% # the Year in Hi-sAFe annual export data is the YEAR AFTER HARVEST
+  filter(Year > 1995) %>%
   left_join(REF.CELLS, by = c("System", "id")) %>%
   filter(!is.na(location)) %>%
   group_by(System, Year, location) %>%
@@ -32,6 +34,7 @@ modeled.yield <- face$annualcrop %>%
 ## COMBINED CROP YIELD
 yield <- modeled.yield %>%
   left_join(measured.yield, by = c("System", "year", "location")) %>%
+  #filter(year != min(.$year)) %>%
   mutate(location = factor(location,
                            c("Monocrop", "North", "Middle", "South"),
                            c("Monocrop", "AF-North", "AF-Middle", "AF-South")))

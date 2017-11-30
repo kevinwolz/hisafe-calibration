@@ -16,6 +16,7 @@ measured.trees <- measured.trees.raw %>%
          value > 0) %>%
   mutate(date = dmy(date)) %>%
   mutate(year = year(date)) %>%
+  mutate(date = ymd(paste0(year, "-12-15"))) %>%
   mutate(variable = factor(variable, labels = c("measured.dbh", "measured.pruned.height", "measured.height"))) %>%
   spread(variable, value) %>%
   filter(!(row.id %in% c("A", "J", "K"))) %>% # Don't use edge rows

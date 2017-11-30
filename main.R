@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME         <- "calibration_20171129_4"
+NAME         <- "calibration_20171130_2"
 MODELED.SITE <- "Restinclieres-A2"
 FIELD.SITE   <- "Restinclieres-A2"
 
@@ -29,3 +29,4 @@ source("simulation.R")
 source("field_data.R")
 source("trees.R")
 source("crops.R")
+source("diagnostics.R")
