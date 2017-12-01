@@ -12,8 +12,8 @@ AF.hip <- define_hisafe(path           = PATH,
                         template       = "restinclieres_agroforestry",
                         SimulationName = MODELED.SITE,
                         mainCropSpecies  = "durum-wheat-allur-restinclieres-Talbot.plt",
-                        interCropSpecies  = "baresoil.plt",
-                        interCropItk      = "baresoil.tec",
+                        interCropSpecies  = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
+                        interCropItk      = "weed-restinclieres.tec", # "baresoil.tec",
                         spacingWithinRows = 9,
                         weatherFile    = WEATHER)
 
@@ -21,8 +21,8 @@ FC.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_forestry",
                         SimulationName = "Forestry",
-                        interCropSpecies    = "baresoil.plt",
-                        interCropItk        = "baresoil.tec",
+                        interCropSpecies    = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
+                        interCropItk        = "weed-restinclieres.tec", # "baresoil.tec",
                         weatherFile    = WEATHER)
 
 CC.hip <- define_hisafe(path           = PATH,
@@ -53,5 +53,5 @@ CC.hop <- read_hisafe(path = PATH, simu.names = "Monocrop",   profiles = PROFILE
 face <- create_face(agroforestry = AF.hop,
                     forestry     = FC.hop,
                     monocrop     = CC.hop,
-                    face.path    = paste0(PATH, "analysis/"))
-dir.create(face$exp.path, showWarnings = FALSE)
+                    face.path    = PATH)
+dir.create(paste0(face.path$exp.path, "analysis/"), showWarnings = FALSE)
