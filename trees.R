@@ -6,40 +6,47 @@
 modeled.trees <- face$trees %>%
   filter(System == "Agroforestry") %>%
   filter(SimulationName == MODELED.SITE) %>%
-  #filter(Month == 12) %>%
-  #filter(Day == 15) %>%
-  #mutate(Year = Year - 1) %>% # the Year in Hi-sAFe annual export data is the YEAR AFTER MEASUREMENT
-  #rename(year = Year) %>%
   rename(date = Date) %>%
   rename(modeled.dbh = dbh) %>%
   mutate(modeled.pruned.height = crownBaseHeight * 100) %>%
   mutate(modeled.height = height * 100) %>%
-  select(date, modeled.dbh, modeled.height, modeled.pruned.height)
+  select(date, Year, Month, Day, modeled.dbh, modeled.height, modeled.pruned.height)
+
+measured.single <- measured.trees %>%
+  group_by(year) %>%
+  summarize(measured.dbh = round(mean(measured.dbh, na.rm = TRUE)/100, 1),
+            measured.pruned.height = round(mean(measured.pruned.height, na.rm = TRUE)/100, 1),
+            measured.height = round(mean(measured.height, na.rm = TRUE)/100, 1))
+
+modeled.single <- modeled.trees %>%
+  rename(year = Year) %>%
+  filter(Month == 12, Day == 15) %>%
+  select(-date, -Month, -Day)
+
+single <- modeled.single %>%
+  left_join(measured.single, by = "year")
+
 
 ## MEASURED vs. MODELED TIMESERIES
 vars <- c("dbh", "pruned.height", "height")
 labs <- c("DBH", "Pruned height", "Tree height")
 
 for(i in vars){
+  mvm <- mvm_annotation(single[[paste0("modeled.", i)]], single[[paste0("measured.", i)]])
+  grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
+
   tree.plot <- ggplot(measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
-    labs(x = "Year", y = paste(labs[match(i, vars)], "(cm)")) +
-    geom_boxplot(aes(group = year), color = "black", na.rm = TRUE, width = 200) +
+    labs(x = "Year",
+         y = paste(labs[match(i, vars)], "(cm)"),
+         title = paste("Hi-sAFe Calibration:", MODELED.SITE),
+         caption = "Measured: Boxplots\nModeled: Line") +
+    geom_boxplot(aes(group = year), color = "grey50", na.rm = TRUE, width = 200) +
     scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
-    #scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(1994,2017), breaks = seq(1995, 2015, 5)) +
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-    geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "red") +
-    theme_ggEHD()
+    geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 1) +
+    annotation_custom(grob) +
+    theme_ggEHD() +
+    theme(plot.title = element_text(hjust = 0.5))
 
   ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_", gsub("\\.", "_", i), ".jpg"), tree.plot)
 }
-
-## MEASURED VS. MODELED SCATTERPLOTS
-# tree.comp <- measured.trees %>%
-#   group_by(year) %>%
-#   summarize(measured.DBH.sd = sd(measured.DBH, na.rm = TRUE),
-#             measured.DBH = mean(measured.DBH, na.rm = TRUE),
-#             measured.pruned.height.sd = sd(measured.pruned.height, na.rm = TRUE),
-#             measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE),
-#             measured.tree.height.sd = sd(measured.tree.height, na.rm = TRUE),
-#             measured.tree.height = mean(measured.tree.height, na.rm = TRUE)) %>%
-#   left_join(modeled.trees, by = "year")

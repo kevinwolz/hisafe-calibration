@@ -34,3 +34,21 @@ measured.yield <- measured.yield.raw %>%
   mutate(measured.yield    = measured.yield / 10,
          measured.yield.sd = measured.yield.sd / 10)
 write_csv(measured.yield, paste0(data.path, "restinclieres_crop_yield_PROCESSED.csv"))
+
+## MVM ANNOTATION FUNCTION
+mvm_annotation = function(m, o) {
+  rmse <- round(sqrt(mean((m - o)^2, na.rm = TRUE)), 2)
+
+  pcc     <- cor.test(m, o, method = "pearson")
+  pcc.est <- round(pcc$estimate, 2)
+  pcc.p   <- round(pcc$p.val, 2)
+
+  srcc <- cor.test(m, o, method = "spearman", exact = FALSE)
+  srcc.est <- round(srcc$estimate, 2)
+  srcc.p   <- round(srcc$p.val, 2)
+
+  label <- paste0("RMSE = ", rmse,
+                  "\nPCC = ", pcc.est, ", p = ", pcc.p,
+                  "\nSRCC = ", srcc.est, ", p = ", srcc.p)
+  return(label)
+}
