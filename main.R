@@ -2,13 +2,8 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME         <- "calibration_20171201_1"
-MODELED.SITE <- "Restinclieres-A2"
-FIELD.SITE   <- "Restinclieres-A2"
-
+NAME <- "calibration_20171206_1"
 RUN.SIMU  <- TRUE
-
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ## REQUIRED LIBRARIES
 library(hisafer)
@@ -24,6 +19,7 @@ library(grid)
 input.path       <- "./raw_data/"
 simulation.path  <- "./simulations/"
 data.path        <- "./output/processed_data/"
+PATH             <- paste0(simulation.path, NAME, "/")
 
 ## SCRIPTS
 source("simulation.R")

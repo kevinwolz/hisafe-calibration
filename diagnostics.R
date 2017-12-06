@@ -3,11 +3,11 @@
 ### Author: Kevin J. Wolz
 
 ## CYCLES
-carbon.plot <- plot_annual_cycle(face, "carbon")
-ggsave(paste0(face$exp.path, "analysis/carbon.png"), carbon.plot, height = 4, width = 11)
+carbon.plot <- plot_annual_cycle(hop, "carbon", simu.names = c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4"))
+ggsave(paste0(PATH, "analysis/carbon.png"), carbon.plot, height = 4, width = 11)
 
-light.plot <- plot_annual_cycle(face, "light")
-ggsave(paste0(face$exp.path, "analysis/light.png"), light.plot, height = 4, width = 11)
+light.plot <- plot_annual_cycle(hop, "light")
+ggsave(paste0(PATH, "analysis/light.png"), light.plot, height = 4, width = 7, scale = 1.5)
 
 # nitrogen.plot <- plot_annual_cycle(face, "nitrogen")
 # ggsave(paste0(face$face.path, "nitrogen.png"), nitrogen.plot, height = 4, width = 11)
@@ -18,5 +18,5 @@ ggsave(paste0(face$exp.path, "analysis/light.png"), light.plot, height = 4, widt
 ## DIAGNOSTICS
 purrr::walk(as.list(PROFILES[PROFILES %in% c("annualtree", "annualplot", "trees", "plot", "climate")]),
             diag_hisafe_ts,
-            hop = face)
-diag_hisafe_monthcells(face)
+            hop = hop)
+diag_hisafe_monthcells(hop)

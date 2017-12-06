@@ -3,66 +3,82 @@
 ### Author: Kevin J. Wolz
 
 ## REFERENCE CELLS
-# 13x8
+# Restinclieres-A2 (13x8)
 # NORTH  <- c(48,49,61,62) # RHS of Scene
 # MIDDLE <- c(40,52,53,65)
 # SOUTH  <- c(43,44,56,57) # LHS of Scene
 
-# 13x9
-NORTH  <- c(61,62) # RHS of Scene
-MIDDLE <- c(53,65)
-SOUTH  <- c(56,57) # LHS of Scene
+# Restinclieres-A2 (13x9)
+A2.NORTH  <- c(56,57) # LHS of Scene
+A2.MIDDLE <- c(53,65)
+A2.SOUTH  <- c(61,62) # RHS of Scene
 
-CELL.IDS  <- c(NORTH, MIDDLE, SOUTH)
-REF.CELLS <- tibble(System = c(rep("Agroforestry", length(CELL.IDS)), "Monocrop"),
-                    location = c(rep(c("North", "Middle", "South"), each = 2), "Monocrop"),
-                    id = c(CELL.IDS, 1))
+# Restinclieres-A3 (13x9)
+A3.EAST   <- c(56,57) # LHS of Scene
+A3.MIDDLE <- c(53,65)
+A3.WEST   <- c(61,62) # RHS of Scene
+
+CELL.IDS  <- c(A2.NORTH, A2.MIDDLE, A2.SOUTH, A3.EAST, A3.MIDDLE, A3.WEST)
+REF.CELLS <- tibble(plot     = c(rep(c("Restinclieres-A2", "Restinclieres-A3"), each = 6), "Monocrop-A2", "Monocrop-A3"),
+                    location = c(rep(c("North", "Middle", "South"), each = 2), rep(c("East", "Middle", "West"), each = 2), "Monocrop", "Monocrop"),
+                    id       = c(CELL.IDS, 1, 1))
 
 ## MODELED CROP YIELD (raw units tons ha-1)
-modeled.yield <- face$annualcrop %>%
-  filter(System != "Forestry") %>%
-  filter(SimulationName %in% c("Monocrop", MODELED.SITE)) %>%
-  select(System, Year, id, x, y, yieldMax) %>%
+modeled.yield <- hop$annualcrop %>%
+  filter(SimulationName %in% c("Restinclieres-A2", "Restinclieres-A3", "Monocrop-A2", "Monocrop-A3")) %>%
+  select(SimulationName, Year, id, x, y, yieldMax) %>%
+  rename(plot = SimulationName) %>%
   mutate(Year = Year - 1) %>% # the Year in Hi-sAFe annual export data is the YEAR AFTER HARVEST
   filter(Year > 1995) %>%
-  left_join(REF.CELLS, by = c("System", "id")) %>%
+  left_join(REF.CELLS, by = c("plot", "id")) %>%
   filter(!is.na(location)) %>%
-  group_by(System, Year, location) %>%
+  group_by(plot, Year, location) %>%
   rename(year = Year) %>%
   summarize(modeled.yield = mean(yieldMax))
 
+modeled.yield$plot[modeled.yield$plot == "Monocrop-A2"] <- "Restinclieres-A2"
+modeled.yield$plot[modeled.yield$plot == "Monocrop-A3"] <- "Restinclieres-A3"
+
 ## COMBINED CROP YIELD
 yield <- modeled.yield %>%
-  left_join(measured.yield, by = c("System", "year", "location")) %>%
-  mutate(location = factor(location,
-                           c("Monocrop", "North", "Middle", "South"),
-                           c("Monocrop", "AF-North", "AF-Middle", "AF-South")))
+  left_join(measured.yield, by = c("plot", "year", "location")) %>%
+  mutate(comparable = as.numeric(year %in% c(2004, 2005, 2008, 2009, 2012)) + 1) %>%
+  mutate(group = purrr::map_chr(strsplit(plot, "-"),2))
+yield$comparable <- factor(yield$comparable, c("1", "2"), c("no", "yes"))
+
+yield$location[yield$location == "East"] <- "North"
+yield$location[yield$location == "West"] <- "South"
+yield$location <- factor(yield$location,
+                         c("Monocrop", "North", "Middle", "South"),
+                         c("Monocrop", "AF-N/E", "AF-Middle", "AF-S/W"))
 
 sd.yield <- yield %>%
-  filter(System == "Agroforestry") %>%
-  group_by(System, year) %>%
+  filter(location != "Monocrop") %>%
+  group_by(plot, group, year) %>%
   summarize(modeled.sd = sd(modeled.yield, na.rm = TRUE),
-            measured.sd = sd(measured.yield, na.rm = TRUE))
+            measured.sd = sd(measured.yield, na.rm = TRUE)) %>%
+  mutate(comparable = as.numeric(year %in% c(2004, 2005, 2008, 2009, 2012)) + 1)
+sd.yield$comparable <- factor(sd.yield$comparable, c("1", "2"), c("no", "yes"))
 
 AF.yield <- yield %>%
   ungroup() %>%
-  filter(System == "Agroforestry") %>%
-  select(-System, -crop, -measured.yield.sd) %>%
+  filter(location != "Monocrop") %>%
+  select(-plot, -crop, -measured.yield.sd) %>%
   rename(modeled.yield.AF = modeled.yield) %>%
   rename(measured.yield.AF = measured.yield)
 
 CC.yield <- yield %>%
   ungroup() %>%
-  filter(System == "Monocrop") %>%
-  select(-System, -crop, -location, -measured.yield.sd) %>%
+  filter(location == "Monocrop") %>%
+  select(-plot, -location, -crop, -measured.yield.sd, -comparable) %>%
   rename(modeled.yield.CC = modeled.yield) %>%
   rename(measured.yield.CC = measured.yield)
 
 rel.yield <- AF.yield %>%
-  left_join(CC.yield, by = "year") %>%
+  left_join(CC.yield, by = c("group", "year")) %>%
   mutate(modeled.rel.yield = modeled.yield.AF / modeled.yield.CC) %>%
   mutate(measured.rel.yield = measured.yield.AF / measured.yield.CC) %>%
-  select(-(modeled.yield.AF:measured.yield.CC))
+  select(-modeled.yield.AF, -modeled.yield.CC, -measured.yield.AF, -measured.yield.CC)
 
 ## MEASURED vs. MODELED TIME SERIES
 # crop.ts.plot <- ggplot(yield, aes(x = year, y = measured.yield)) +
@@ -85,56 +101,72 @@ rel.yield <- AF.yield %>%
 crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
   labs(x = "Modeled wheat yield (ton ha-1)",
        y = "Measured wheat yield (ton ha-1)",
-       title = paste("Hi-sAFe Calibration:", MODELED.SITE),
+       title = "Hi-sAFe Calibration",
        shape = "Zone",
-       fill = "Year") +
+       fill = "Year",
+       #color = "Plot",
+       size = "DW after DW") +
+  facet_wrap(~group) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   geom_errorbar(aes(ymin = measured.yield - measured.yield.sd,
                     ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
-  geom_point(aes(fill = year, shape = location), na.rm = TRUE) +
-  scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0,10)) +
+  geom_point(aes(fill = year, shape = location, size = comparable), na.rm = TRUE) +
+  #geom_point(aes(color = group, shape = location, size = comparable), fill = "transparent", na.rm = TRUE) +
+  scale_x_continuous(limits = c(0,10)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0,10)) +
   scale_shape_manual(values = c(21, 22, 23, 24)) +
+  #scale_color_manual(values = c("black", "grey50")) +
+  scale_size_manual(values = c(2, 3)) +
   scale_fill_viridis(option = "magma") +
   annotate("text", x = 10, y = 0, label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_crop_yield.jpg"), crop.scatterplot, scale = 1.1)
+ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.5)
 
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
 sd.scatterplot <- ggplot(sd.yield, aes(x = modeled.sd, y = measured.sd)) +
   labs(x = "Modeled wheat yield SD (ton ha-1)",
        y = "Measured wheat yield SD (ton ha-1)",
-       title = paste("Hi-sAFe Calibration:", MODELED.SITE),
-       fill = "Year") +
+       title = "Hi-sAFe Calibration",
+       fill = "Year",
+       color = "Plot",
+       size = "DW after DW") +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  geom_point(aes(fill = year), shape = 21, na.rm = TRUE) +
+  geom_point(aes(fill = year, size = comparable), shape = 21, na.rm = TRUE) +
+  geom_point(aes(color = group, size = comparable), shape = 21, fill = "transparent", na.rm = TRUE) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0,1.7)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0,1.7)) +
   scale_fill_viridis(option = "magma") +
+  scale_color_manual(values = c("black", "grey50")) +
+  scale_size_manual(values = c(2, 3)) +
   annotate("text", x = 1.7, y = 0, label = mvm_annotation(sd.yield$modeled.sd, sd.yield$measured.sd), hjust = 1, vjust = 0) +
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_crop_yield_SD.jpg"), sd.scatterplot, scale = 1.1)
+ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield_SD.jpg"), sd.scatterplot, scale = 1.2)
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
 rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel.yield)) +
   labs(x = "Modeled wheat realtive yield",
        y = "Measured wheat realtive yield",
-       title = paste("Hi-sAFe Calibration:", MODELED.SITE),
+       title = "Hi-sAFe Calibration",
        shape = "Zone",
-       fill = "Year") +
+       fill = "Year",
+       color = "Plot",
+       size = "DW after DW") +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  geom_point(aes(fill = year, shape = location), na.rm = TRUE) +
+  geom_point(aes(fill = year, shape = location, size = comparable), na.rm = TRUE) +
+  geom_point(aes(color = group, shape = location, size = comparable), fill = "transparent", na.rm = TRUE) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0.5,1)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(0.5,1)) +
   scale_shape_manual(values = c(22, 23, 24)) +
+  scale_color_manual(values = c("black", "grey50")) +
   scale_fill_viridis(option = "magma") +
+  scale_size_manual(values = c(2, 3)) +
   annotate("text", x = 0.5, y = 1, label = mvm_annotation(rel.yield$modeled.rel.yield, rel.yield$measured.rel.yield), hjust = 0, vjust = 1) +
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.1)
+ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.2)
