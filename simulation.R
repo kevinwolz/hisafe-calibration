@@ -12,9 +12,10 @@ A2.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry",
                         SimulationName = "Restinclieres-A2",
-                        mainCropSpecies   = "durum-wheat-allur-restinclieres-Talbot.plt",
+                        #mainCropSpecies   = "durum-wheat-allur-restinclieres-Talbot.plt",
                         interCropSpecies  = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk      = "weed-restinclieres.tec", # "baresoil.tec",
+                        treePruningDays = list(rep(160, 20)),
                         spacingWithinRows = 9,
                         weatherFile    = A2.WEATHER)
 
@@ -22,9 +23,10 @@ A3.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry",
                         SimulationName = "Restinclieres-A3",
-                        mainCropSpecies     = "durum-wheat-allur-restinclieres-Talbot.plt",
+                        #mainCropSpecies     = "durum-wheat-allur-restinclieres-Talbot.plt",
                         interCropSpecies    = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk        = "weed-restinclieres.tec", # "baresoil.tec",
+                        treePruningDays = list(rep(160, 20)),
                         treeLineOrientation = 344.3,
                         spacingWithinRows   = 9,
                         weatherFile    = A3.WEATHER)
@@ -36,19 +38,20 @@ A4.hip <- define_hisafe(path           = PATH,
                         SimulationName = "Restinclieres-A4",
                         interCropSpecies    = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk        = "weed-restinclieres.tec", # "baresoil.tec",
+                        treePruningDays = list(rep(160, 20)),
                         weatherFile    = A4.WEATHER)
 
 A2.CC.hip <- define_hisafe(path           = PATH,
                            profiles       = PROFILES,
                            template       = "restinclieres_monocrop",
-                           mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
+                           #mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
                            SimulationName  = "Monocrop-A2",
                            weatherFile    = A2.WEATHER)
 
 A3.CC.hip <- define_hisafe(path           = PATH,
                            profiles       = PROFILES,
                            template       = "restinclieres_monocrop",
-                           mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
+                           #mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
                            SimulationName  = "Monocrop-A3",
                            weatherFile    = A3.WEATHER)
 

@@ -56,16 +56,22 @@ for(i in vars){
 vars <- c("dbh", "height")
 labs <- c("DBH increment", "tree height increment")
 
-increment.trees <- tibble(year            = single$year[2:nrow(single)],
-                          modeled.dbh     = diff(single$modeled.dbh),
-                          modeled.height  = diff(single$modeled.height),
-                          measured.dbh    = diff(single$measured.dbh),
-                          measured.height = diff(single$measured.height))
+get_increment <- function(x, df) {
+  df <- subset(df, plot == x)
+  increment <- tibble(year            = df$year[2:nrow(df)],
+                      plot            = x,
+                      modeled.dbh     = diff(df$modeled.dbh),
+                      modeled.height  = diff(df$modeled.height),
+                      measured.dbh    = diff(df$measured.dbh),
+                      measured.height = diff(df$measured.height))
+  return(increment)
+}
+increment.trees <- purrr::map_dfr(unique(single$plot), get_increment, df = single)
 
 for(i in vars){
-  if(i == "dbh") { LIMITS <- c(0,3.5) } else { LIMITS <- c(0,75) }
-  mvm <- mvm_annotation(increment.trees[[paste0("modeled.", i)]], increment.trees[[paste0("measured.", i)]])
-  grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
+  if(i == "dbh") { LIMITS <- c(0,2.5) } else { LIMITS <- c(0,75) }
+  #mvm <- mvm_annotation(increment.trees[[paste0("modeled.", i)]], increment.trees[[paste0("measured.", i)]])
+  #grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
 
   tree.plot <- ggplot(increment.trees, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
     labs(x = paste("Modeled", labs[match(i, vars)], "(cm)"),
@@ -77,12 +83,12 @@ for(i in vars){
     #                  ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
     geom_point(aes(fill = year), shape = 21, na.rm = TRUE) +
     scale_fill_viridis(option = "magma") +
-    scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
+    scale_x_continuous(limits = LIMITS) +
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
-    annotation_custom(grob) +
+    #annotation_custom(grob) +
     coord_equal() +
     theme_ggEHD() +
     theme(plot.title = element_text(hjust = 0.5))
 
-  ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_", gsub("\\.", "_", i), "_scatterplot.jpg"), tree.plot)
+  ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_", gsub("\\.", "_", i), "_increment_scatterplot.jpg"), tree.plot, scale = 1.7)
 }
