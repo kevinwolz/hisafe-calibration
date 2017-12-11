@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20171207_1"
+NAME <- "calibration_20171208_1"
 RUN.SIMU  <- TRUE
 
 ## REQUIRED LIBRARIES

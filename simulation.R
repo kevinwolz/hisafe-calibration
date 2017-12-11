@@ -12,23 +12,39 @@ A2.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry",
                         SimulationName = "Restinclieres-A2",
+                        #simulationNbrDays = list(rep(365,22)),
                         #mainCropSpecies   = "durum-wheat-allur-restinclieres-Talbot.plt",
                         interCropSpecies  = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk      = "weed-restinclieres.tec", # "baresoil.tec",
-                        treePruningDays = list(rep(160, 20)),
-                        spacingWithinRows = 9,
+                        treePruningDays = list(rep(215, 20)),
+                        #spacingWithinRows = 9,
+                            geometryOption = 3,
+                            plotWidth = 13,
+                            plotHeight = 8,
+                            spacingBetweenRows = 13,
+                            spacingWithinRows = 8,
+                            tree.initialization = tree_init_params(treeX = 6.5, treeY = 3.5),
+                        #treeCropDistance = 0.5,
                         weatherFile    = A2.WEATHER)
 
 A3.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry",
                         SimulationName = "Restinclieres-A3",
+                        #simulationNbrDays = list(rep(365,22)),
                         #mainCropSpecies     = "durum-wheat-allur-restinclieres-Talbot.plt",
                         interCropSpecies    = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk        = "weed-restinclieres.tec", # "baresoil.tec",
-                        treePruningDays = list(rep(160, 20)),
+                        treePruningDays = list(rep(215, 20)),
                         treeLineOrientation = 344.3,
-                        spacingWithinRows   = 9,
+                        #spacingWithinRows   = 9,
+                            geometryOption = 3,
+                            plotWidth = 13,
+                            plotHeight = 8,
+                            spacingBetweenRows = 13,
+                            spacingWithinRows = 8,
+                            tree.initialization = tree_init_params(treeX = 6.5, treeY = 3.5),
+                        #treeCropDistance = 0.5,
                         weatherFile    = A3.WEATHER)
 
 
@@ -38,7 +54,13 @@ A4.hip <- define_hisafe(path           = PATH,
                         SimulationName = "Restinclieres-A4",
                         interCropSpecies    = "weed-restinclieres-Talbot.plt", # "baresoil.plt",
                         interCropItk        = "weed-restinclieres.tec", # "baresoil.tec",
-                        treePruningDays = list(rep(160, 20)),
+                        treePruningDays = list(rep(215, 20)),
+                            geometryOption = 3,
+                            plotWidth = 7,
+                            plotHeight = 4,
+                            spacingBetweenRows = 7,
+                            spacingWithinRows = 4,
+                            tree.initialization = tree_init_params(treeX = 3.5, treeY = 1.5),
                         weatherFile    = A4.WEATHER)
 
 A2.CC.hip <- define_hisafe(path           = PATH,
@@ -46,6 +68,7 @@ A2.CC.hip <- define_hisafe(path           = PATH,
                            template       = "restinclieres_monocrop",
                            #mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
                            SimulationName  = "Monocrop-A2",
+                           #simulationNbrDays = list(rep(365,22)),
                            weatherFile    = A2.WEATHER)
 
 A3.CC.hip <- define_hisafe(path           = PATH,
@@ -53,6 +76,7 @@ A3.CC.hip <- define_hisafe(path           = PATH,
                            template       = "restinclieres_monocrop",
                            #mainCropSpecies = "durum-wheat-allur-restinclieres-Talbot.plt",
                            SimulationName  = "Monocrop-A3",
+                           #simulationNbrDays = list(rep(365,22)),
                            weatherFile    = A3.WEATHER)
 
 
@@ -90,4 +114,5 @@ hop.new <- hop <- read_hisafe(path = PATH,
 #                     forestry     = FC.hop,
 #                     monocrop     = CC.hop,
 #                     face.path    = PATH)
-dir.create(paste0(PATH, "analysis/"), showWarnings = FALSE)
+dir.create(paste0(PATH, "analysis/cycles/"), showWarnings = FALSE, recursive = TRUE)
+dir.create(paste0(PATH, "analysis/calibration/"), showWarnings = FALSE, recursive = TRUE)

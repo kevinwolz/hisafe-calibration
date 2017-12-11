@@ -17,6 +17,16 @@ A2.SOUTH  <- c(61,62) # RHS of Scene
 A3.EAST   <- c(56,57) # LHS of Scene
 A3.MIDDLE <- c(53,65)
 A3.WEST   <- c(61,62) # RHS of Scene
+#
+# # Restinclieres-A2 (13x8)
+# A2.NORTH  <- c(43,44) # LHS of Scene
+# A2.MIDDLE <- c(40,52)
+# A2.SOUTH  <- c(48,49) # RHS of Scene
+#
+# # Restinclieres-A3 (13x8)
+# A3.EAST   <- c(43,44) # LHS of Scene
+# A3.MIDDLE <- c(40,52)
+# A3.WEST   <- c(48,49) # RHS of Scene
 
 CELL.IDS  <- c(A2.NORTH, A2.MIDDLE, A2.SOUTH, A3.EAST, A3.MIDDLE, A3.WEST)
 REF.CELLS <- tibble(plot     = c(rep(c("Restinclieres-A2", "Restinclieres-A3"), each = 6), "Monocrop-A2", "Monocrop-A3"),
@@ -122,7 +132,7 @@ crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.5)
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.5)
 
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
@@ -145,7 +155,7 @@ sd.scatterplot <- ggplot(sd.yield, aes(x = modeled.sd, y = measured.sd)) +
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield_SD.jpg"), sd.scatterplot, scale = 1.2)
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_SD.jpg"), sd.scatterplot, scale = 1.2)
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
 rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel.yield)) +
@@ -169,4 +179,4 @@ rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel
   theme_ggEHD() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.2)
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.2)

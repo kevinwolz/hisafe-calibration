@@ -35,7 +35,7 @@ for(i in vars){
   #mvm <- mvm_annotation(single[[paste0("modeled.", i)]], single[[paste0("measured.", i)]])
   #grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
 
-  tree.plot <- ggplot(measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
+  ts.plot <- ggplot(measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
     labs(x = "Year",
          y = paste(labs[match(i, vars)], "(cm)"),
          title = "Hi-sAFe Calibration",
@@ -49,7 +49,7 @@ for(i in vars){
     theme_ggEHD() +
     theme(plot.title = element_text(hjust = 0.5))
 
-  ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_", gsub("\\.", "_", i), "_timeseries.jpg"), tree.plot, scale = 1.5)
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_timeseries.jpg"), ts.plot, scale = 1.5)
 }
 
 ## MEASURED vs. MODELED INCREMENT SCATTERPLOT
@@ -73,7 +73,7 @@ for(i in vars){
   #mvm <- mvm_annotation(increment.trees[[paste0("modeled.", i)]], increment.trees[[paste0("measured.", i)]])
   #grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
 
-  tree.plot <- ggplot(increment.trees, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
+  mvm.inc.plot <- ggplot(increment.trees, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
     labs(x = paste("Modeled", labs[match(i, vars)], "(cm)"),
          y = paste("Measured", labs[match(i, vars)], "(cm)"),
          title = "Hi-sAFe Calibration") +
@@ -90,5 +90,26 @@ for(i in vars){
     theme_ggEHD() +
     theme(plot.title = element_text(hjust = 0.5))
 
-  ggsave_fitmax(paste0(PATH, "analysis/hisafe_calibration_", gsub("\\.", "_", i), "_increment_scatterplot.jpg"), tree.plot, scale = 1.7)
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_scatterplot.jpg"), mvm.inc.plot, scale = 1.7)
+}
+
+## MEASURED vs. MODELED INCREMENT SCATTERPLOT
+vars <- c("dbh", "height")
+labs <- c("DBH increment", "tree height increment")
+
+for(i in vars){
+  ts.inc.plot <- ggplot(increment.trees, aes(x = year)) +
+    labs(x = "Year",
+         y = paste(labs[match(i, vars)], "(cm)"),
+         title = "Hi-sAFe Calibration",
+         caption = "Measured: Points\nModeled: Line") +
+    facet_wrap(~plot, nrow = 1) +
+    geom_line(aes_string(y = paste0("modeled.", i)), na.rm = TRUE) +
+    geom_point(aes_string(y = paste0("measured.", i)), na.rm = TRUE) +
+    scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+    coord_equal() +
+    theme_ggEHD() +
+    theme(plot.title = element_text(hjust = 0.5))
+
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_timeseries.jpg"), ts.inc.plot, scale = 1.7)
 }
