@@ -3,26 +3,33 @@
 ### Author: Kevin J. Wolz
 
 ## MEASURED TREE BIOMETRICS
-A2.EDGE.TREES <- c(paste("B", c(10:12, 69), sep = "-"),
+A2.EDGE.TREES <- c(paste("A", 1:100, sep = "-"),
+                   paste("B", c(10:12, 69), sep = "-"),
                    paste("C", c(9:10, 68), sep = "-"),
                    paste("D", c(8:10, 68:70), sep = "-"),
                    paste("E", c(6:8, 70:73), sep = "-"),
                    paste("F", c(4:6, 73:76), sep = "-"),
                    paste("G", c(3:4, 76:80), sep = "-"),
                    paste("H", c(1:3, 50:62, 80:83), sep = "-"),
-                   paste("I", c(1:5, 42:50, 61:68, 82:84), sep = "-"))
+                   paste("I", c(1:5, 42:50, 61:68, 82:84), sep = "-"),
+                   paste("J", 1:100, sep = "-"),
+                   paste("K", 1:100, sep = "-"))
 
-A3.EDGE.TREES <- c(paste(2, c(1:10, 53:55), sep = "-"),
+A3.EDGE.TREES <- c(paste(1, 1:100, sep = "-"),
+                   paste(2, c(1:10, 53:55), sep = "-"),
                    paste(3, c(3:4, 55:57), sep = "-"),
                    paste(4, c(4:5, 56:59), sep = "-"),
-                   paste(5, c(5:16, 50:62), sep = "-"))
+                   paste(5, c(5:16, 50:62), sep = "-"),
+                   paste(6, 1:100, sep = "-"),
+                   paste(7, 1:100, sep = "-"),
+                   paste(8, 1:100, sep = "-"))
 
-A4.GOOD.TREES <- c(paste(3, c(3:4), sep = "-"),
-                   paste(4, c(3:4), sep = "-"),
-                   paste(5, c(3:4), sep = "-"),
-                   paste(6, c(3:4, 31:34), sep = "-"),
-                   paste(7, c(3:4, 10:18, 30:34), sep = "-"),
-                   paste(8, c(3:4, 10:17, 29:34), sep = "-"),
+A4.GOOD.TREES <- c(#paste(3, c(3:4), sep = "-"),
+                   #paste(4, c(3:4), sep = "-"),
+                   #paste(5, c(3:4), sep = "-"),
+                   paste(6, c(31:34), sep = "-"), # 3:4,
+                   paste(7, c(10:18, 30:34), sep = "-"), # 3:4,
+                   paste(8, c(10:17, 29:34), sep = "-"), # 3:4,
                    paste(9, c(30:34), sep = "-"),
                    paste(10, c(32:34), sep = "-"))
 
@@ -39,12 +46,10 @@ measured.trees <- measured.trees.raw %>%
   mutate(variable = factor(variable, labels = c("measured.dbh", "measured.pruned.height", "measured.height"))) %>%
   spread(variable, value) %>%
   ## Filter A2AF Trees
-  filter(!(plot == "Restinclieres-A2" & row.id     %in% c("A", "J", "K")),              # Don't use edge rows
-         !(plot == "Restinclieres-A2" & rowtree.id %in% A2.EDGE.TREES),                 # Don't use other trees that are exposed
+  filter(!(plot == "Restinclieres-A2" & rowtree.id %in% A2.EDGE.TREES),                 # Don't use edge trees
          !(plot == "Restinclieres-A2" & row.id     %in% c("E", "F") & year > 2013)) %>% # Don't use rows E&F after 2013 because they were pollarded
   ## Filter A3 Trees
-  filter(!(plot == "Restinclieres-A3" & row.id     %in% c("1", "6", "7", "8")),  # Don't use edge rows
-         !(plot == "Restinclieres-A3" & rowtree.id %in% A3.EDGE.TREES)) %>%      # Don't use other trees that are exposed
+  filter(!(plot == "Restinclieres-A3" & rowtree.id %in% A3.EDGE.TREES)) %>%      # Don't use edge trees
   ## Filter A4 Trees
   filter(!(plot == "Restinclieres-A4" & !(rowtree.id %in% A4.GOOD.TREES))) %>% # Use specific trees that are not on edges and were not fertilized
   select(System, plot, year, date, id, rowtree.id, row.id, tree.id, everything(), -unit)
@@ -82,7 +87,6 @@ write_csv(measured.yield, paste0(data.path, "restinclieres_crop_yield_PROCESSED.
 #   rename(measured.yield.AF = measured.yield)
 #
 # measured.CC.yield <- measured.yield %>%
-#   ungroup() %>%
 #   filter(System == "Monocrop") %>%
 #   select(-System, -crop, -location, -measured.yield.sd) %>%
 #   rename(measured.yield.CC = measured.yield)
@@ -91,6 +95,27 @@ write_csv(measured.yield, paste0(data.path, "restinclieres_crop_yield_PROCESSED.
 #   left_join(measured.CC.yield, by = "year") %>%
 #   mutate(measured.rel.yield = measured.yield.AF / measured.yield.CC) %>%
 #   select(-(measured.yield.AF:measured.yield.CC))
+
+## PLOT MAPS
+map.data <- measured.trees
+nums <- as.character(1:26)
+names(nums) <- LETTERS
+map.data$row.id <- str_replace_all(map.data$row.id, nums)
+map.data$row.id <- as.numeric(map.data$row.id)
+map.data$row.id[map.data$plot == "Restinclieres-A3"] <- -1 * map.data$row.id[map.data$plot == "Restinclieres-A3"]
+for(p in unique(map.data$plot)) {
+  dbh.map <- ggplot(filter(map.data, year == 2016 & plot == p),
+                    aes(x    = as.numeric(row.id),
+                        y    = -tree.id,
+                        size = measured.dbh)) +
+    labs(title  = p) +
+    guides(size = FALSE) +
+    geom_point() +
+    theme_void() +
+    theme(aspect.ratio = 2,
+          plot.title   = element_text(hjust = 0.5, size = 30))
+  ggsave_fitmax(paste0("./output/DBH_Map_", p, ".jpg"), dbh.map, scale = 1)
+}
 
 ## MVM ANNOTATION FUNCTION
 mvm_annotation = function(m, o) {

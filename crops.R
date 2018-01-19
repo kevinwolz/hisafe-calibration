@@ -3,30 +3,25 @@
 ### Author: Kevin J. Wolz
 
 ## REFERENCE CELLS
+# # Restinclieres-A2 (13x9)
+# A2.NORTH  <- c(56,57) # LHS of Scene
+# A2.MIDDLE <- c(53,65)
+# A2.SOUTH  <- c(61,62) # RHS of Scene
+#
+# # Restinclieres-A3 (13x9)
+# A3.EAST   <- c(56,57) # LHS of Scene
+# A3.MIDDLE <- c(53,65)
+# A3.WEST   <- c(61,62) # RHS of Scene
+#
 # Restinclieres-A2 (13x8)
-# NORTH  <- c(48,49,61,62) # RHS of Scene
-# MIDDLE <- c(40,52,53,65)
-# SOUTH  <- c(43,44,56,57) # LHS of Scene
+A2.NORTH  <- c(43,44) # LHS of Scene
+A2.MIDDLE <- c(40,52)
+A2.SOUTH  <- c(48,49) # RHS of Scene
 
-# Restinclieres-A2 (13x9)
-A2.NORTH  <- c(56,57) # LHS of Scene
-A2.MIDDLE <- c(53,65)
-A2.SOUTH  <- c(61,62) # RHS of Scene
-
-# Restinclieres-A3 (13x9)
-A3.EAST   <- c(56,57) # LHS of Scene
-A3.MIDDLE <- c(53,65)
-A3.WEST   <- c(61,62) # RHS of Scene
-#
-# # Restinclieres-A2 (13x8)
-# A2.NORTH  <- c(43,44) # LHS of Scene
-# A2.MIDDLE <- c(40,52)
-# A2.SOUTH  <- c(48,49) # RHS of Scene
-#
-# # Restinclieres-A3 (13x8)
-# A3.EAST   <- c(43,44) # LHS of Scene
-# A3.MIDDLE <- c(40,52)
-# A3.WEST   <- c(48,49) # RHS of Scene
+# Restinclieres-A3 (13x8)
+A3.EAST   <- c(43,44) # LHS of Scene
+A3.MIDDLE <- c(40,52)
+A3.WEST   <- c(48,49) # RHS of Scene
 
 CELL.IDS  <- c(A2.NORTH, A2.MIDDLE, A2.SOUTH, A3.EAST, A3.MIDDLE, A3.WEST)
 REF.CELLS <- tibble(plot     = c(rep(c("Restinclieres-A2", "Restinclieres-A3"), each = 6), "Monocrop-A2", "Monocrop-A3"),
@@ -103,7 +98,7 @@ rel.yield <- AF.yield %>%
 #   geom_point(aes(y = modeled.yield, fill = location), shape = 21, na.rm = TRUE) +
 #   scale_color_manual(values = cbPalette) +
 #   scale_fill_manual(values = cbPalette) +
-#   theme_ggEHD()
+#   theme_hisafe_ts()
 #
 # ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_", gsub("\\.", "_", i), ".jpg"), crop.ts.plot)
 
@@ -129,7 +124,7 @@ crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
   scale_size_manual(values = c(2, 3)) +
   scale_fill_viridis(option = "magma") +
   annotate("text", x = 10, y = 0, label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
-  theme_ggEHD() +
+  theme_hisafe_ts() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.5)
@@ -152,7 +147,7 @@ sd.scatterplot <- ggplot(sd.yield, aes(x = modeled.sd, y = measured.sd)) +
   scale_color_manual(values = c("black", "grey50")) +
   scale_size_manual(values = c(2, 3)) +
   annotate("text", x = 1.7, y = 0, label = mvm_annotation(sd.yield$modeled.sd, sd.yield$measured.sd), hjust = 1, vjust = 0) +
-  theme_ggEHD() +
+  theme_hisafe_ts() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_SD.jpg"), sd.scatterplot, scale = 1.2)
@@ -176,7 +171,7 @@ rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel
   scale_fill_viridis(option = "magma") +
   scale_size_manual(values = c(2, 3)) +
   annotate("text", x = 0.5, y = 1, label = mvm_annotation(rel.yield$modeled.rel.yield, rel.yield$measured.rel.yield), hjust = 0, vjust = 1) +
-  theme_ggEHD() +
+  theme_hisafe_ts() +
   theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.2)

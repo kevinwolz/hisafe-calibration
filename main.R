@@ -2,24 +2,27 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20171208_1"
-RUN.SIMU  <- TRUE
+NAME <- "calibration_20180117"
+BUILD.SIMU  <- TRUE
+RUN.SIMU    <- TRUE
+CLUSTER     <- TRUE
 
 ## REQUIRED LIBRARIES
 library(hisafer)
 library(tidyverse)
 library(readr)
 library(stringr)
-library(DeLuciatoR)
 library(lubridate)
 library(viridis)
 library(grid)
+library(ggalt)
 
 ## PATHS
-input.path       <- "./raw_data/"
-simulation.path  <- "./simulations/"
-data.path        <- "./output/processed_data/"
-PATH             <- paste0(simulation.path, NAME, "/")
+input.path      <- "./raw_data/"
+simulation.path <- "./simulations/"
+data.path       <- "./output/processed_data/"
+allom.path      <- "./output/allometry/"
+PATH            <- paste0(simulation.path, NAME, "/")
 
 ## SCRIPTS
 source("simulation.R")

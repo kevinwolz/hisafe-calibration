@@ -46,7 +46,7 @@ for(i in vars){
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
     geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 1) +
     #annotation_custom(grob) +
-    theme_ggEHD() +
+    theme_hisafe_ts() +
     theme(plot.title = element_text(hjust = 0.5))
 
   ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_timeseries.jpg"), ts.plot, scale = 1.5)
@@ -87,7 +87,7 @@ for(i in vars){
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
     #annotation_custom(grob) +
     coord_equal() +
-    theme_ggEHD() +
+    theme_hisafe_ts() +
     theme(plot.title = element_text(hjust = 0.5))
 
   ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_scatterplot.jpg"), mvm.inc.plot, scale = 1.7)
@@ -108,7 +108,7 @@ for(i in vars){
     geom_point(aes_string(y = paste0("measured.", i)), na.rm = TRUE) +
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
     coord_equal() +
-    theme_ggEHD() +
+    theme_hisafe_ts() +
     theme(plot.title = element_text(hjust = 0.5))
 
   ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_timeseries.jpg"), ts.inc.plot, scale = 1.7)
