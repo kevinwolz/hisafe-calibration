@@ -41,7 +41,7 @@ for(i in vars){
          title = "Hi-sAFe Calibration",
          caption = "Measured: Boxplots\nModeled: Line") +
     facet_wrap(~plot, nrow = 1) +
-    geom_boxplot(aes(group = year), color = "grey50", na.rm = TRUE) +
+    geom_boxplot(aes(group = year), color = "grey50", na.rm = TRUE, outlier.shape = NA) +
     scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
     geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 1) +

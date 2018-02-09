@@ -7,7 +7,7 @@ management    <- readr::read_csv("./raw_data/restinclieres_crop_management.csv",
 fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization.csv", col_types = readr::cols())
 #management    <- readr::read_csv("./raw_data/restinclieres_crop_management-WHEAT_ONLY.csv",    col_types = readr::cols())
 #fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization-WHEAT_ONLY.csv", col_types = readr::cols())
-NEW.TECS <- data.frame(year = 1995:2016, file.name = paste0("R", 1995:2016, "-", 1996:2017, ".tec"))
+NEW.TECS <- data.frame(year = 1994:2016, file.name = paste0("R", 1994:2016, "-", 1995:2017, ".tec"))
 
 get_original_tec <- function(x, num.disturb, num.fert) {
   num.disturb <- max(num.disturb, 1)
@@ -47,7 +47,7 @@ get_original_tec <- function(x, num.disturb, num.fert) {
   return(tec)
 }
 
-paths <- paste0("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafer/inst/extdata/", c("restinclieres_monocrop", "restinclieres_agroforestry"), "/cropInterventions/")
+paths <- paste0("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafer/inst/extdata/template_common/cropInterventions/")
 for(path in paths) {
   for(i in 1:nrow(NEW.TECS)) {
     YEAR <- NEW.TECS$year[i]

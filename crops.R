@@ -154,8 +154,8 @@ ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_S
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
 rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel.yield)) +
-  labs(x = "Modeled wheat realtive yield",
-       y = "Measured wheat realtive yield",
+  labs(x = "Modeled wheat relative yield",
+       y = "Measured wheat relative yield",
        title = "Hi-sAFe Calibration",
        shape = "Zone",
        fill = "Year",

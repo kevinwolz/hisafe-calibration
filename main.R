@@ -2,9 +2,9 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20180117"
+NAME <- "calibration_20180208"
 BUILD.SIMU  <- TRUE
-RUN.SIMU    <- TRUE
+RUN.SIMU    <- FALSE
 CLUSTER     <- TRUE
 
 ## REQUIRED LIBRARIES

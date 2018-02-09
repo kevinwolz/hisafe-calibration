@@ -2,7 +2,59 @@
 ### DIAGNOSTICS
 ### Author: Kevin J. Wolz
 
-analyze_hisafe(hop)
+analyze_hisafe(hop,
+               carbon          = TRUE,
+               light           = TRUE,
+               nitrogen        = TRUE,
+               water           = TRUE,
+               carbon.daily    = TRUE,
+               light.daily     = TRUE,
+               nitrogen.daily  = TRUE,
+               water.daily     = TRUE,
+               annualtree      = FALSE,
+               annualplot      = FALSE,
+               trees           = FALSE,
+               plot            = FALSE,
+               climate         = FALSE,
+               annualcrop      = FALSE,
+               monthCells      = FALSE,
+               voxels          = FALSE)
+
+analyze_hisafe(hop,
+               carbon          = FALSE,
+               light           = FALSE,
+               nitrogen        = FALSE,
+               water           = FALSE,
+               carbon.daily    = FALSE,
+               light.daily     = FALSE,
+               nitrogen.daily  = FALSE,
+               water.daily     = FALSE,
+               annualtree      = TRUE,
+               annualplot      = TRUE,
+               trees           = TRUE,
+               plot            = TRUE,
+               climate         = TRUE,
+               annualcrop      = TRUE,
+               monthCells      = TRUE,
+               voxels          = FALSE)
+
+analyze_hisafe(hop,
+               carbon          = FALSE,
+               light           = FALSE,
+               nitrogen        = FALSE,
+               water           = FALSE,
+               carbon.daily    = FALSE,
+               light.daily     = FALSE,
+               nitrogen.daily  = FALSE,
+               water.daily     = FALSE,
+               annualtree      = FALSE,
+               annualplot      = TRUE,
+               trees           = FALSE,
+               plot            = TRUE,
+               climate         = FALSE,
+               annualcrop      = FALSE,
+               monthCells      = FALSE,
+               voxels          = FALSE)
 
 # ## CYCLE PLOTS
 # carbon.plot <- plot_hisafe_cycle(hop, "carbon", simu.names = c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4"))

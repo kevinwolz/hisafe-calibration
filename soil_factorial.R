@@ -146,7 +146,7 @@ build_cluster_script(hip          = hip,
                      email        = "wolzkevin@gmail.com")
 
 hop <- read_hisafe(hip        = hip,
-                   simu.names = c("Sim_1", "Sim_3", "Sim_9", "Sim_12"),
+                   #simu.names = c("Sim_1", "Sim_3", "Sim_9", "Sim_12"),
                    profiles   = PROFILES,
                    date.max   = "2018-01-01")
 
@@ -154,16 +154,22 @@ hop <- hop_rename(hop       = hop,
                   old.names = hop$exp.plan$SimulationName,
                   new.names = paste0(hop$exp.plan$budBurstToLeafFallDuration, "-", hop$exp.plan$lueMax))
 
-analyze_hisafe(hop,
+diag_hisafe_ts(hop,
+               "trees",
                aes.cols = list(color    = "budBurstToLeafFallDuration",
                                linetype = "lueMax"))
 
 six   <- hop$exp.plan$SimulationName[str_detect(hop$exp.plan$SimulationName, "0.6")]
 seven <- hop$exp.plan$SimulationName[str_detect(hop$exp.plan$SimulationName, "0.7")]
 
+hop7 <- hop_filter(hop, seven)
+
+filter(hop7$annualtree, Year == 1998) %>%
+  select(SimulationName, dbh)
+
 carbon.plot <- plot_hisafe_cycle(hop_filter(hop, six), "carbon")
 ggsave_fitmax(paste0(PATH, NAME, "/analysis/cycles/carbon_6.png"), carbon.plot, scale = 1.5)
-carbon.plot <- plot_hisafe_cycle(hop_filter(hop, seven), "carbon")
+carbon.plot <- plot_hisafe_cycle_annual(hop_filter(hop, seven), "carbon")
 ggsave_fitmax(paste0(PATH, NAME, "/analysis/cycles/carbon_7.png"), carbon.plot, scale = 1.5)
 
 light.plot <- plot_hisafe_cycle(hop_filter(hop, six), "light")
@@ -228,7 +234,7 @@ hop <- read_hisafe(path = paste0(PATH, NAME),
 analyze_hisafe(hop)
 
 ##### TREE PLACEMENT #####
-NAME <- "tree_placement_full"
+NAME <- "tree_placement_full_2000_ICFIX"
 
 x <- seq(0.5, 12.5, 2)
 y <- seq(0.5, 7.5, 2)
@@ -240,6 +246,7 @@ hip <- define_hisafe(path                 = PATH,
                       exp.name            = NAME,
                       profiles            = c("annualplot", "annualtree"), #PROFILES,
                       template            = "restinclieres_agroforestry",
+                     simulationYearStart  = 2000,
                       treeLineOrientation = 344.3,
                       geometryOption      = 3,
                       plotWidth           = 13,
@@ -258,8 +265,79 @@ build_cluster_script(hip          = hip,
                      email        = "wolzkevin@gmail.com")
 
 hop <- read_hisafe(hip        = hip,
-                   profiles   = c("annualtree"), #PROFILES,
                    date.max   = "2018-01-01")
 
-diag_hisfe_ts(hop, "annualtree")
+diag_hisafe_ts(hop, "annualtree")
+diag_hisafe_ts(hop, "annualplot")
 #analyze_hisafe(hop)
+
+bad <- hop$annualtree %>%
+  group_by(SimulationName) %>%
+  summarize(dbh.max = max(dbh)) %>%
+  filter(dbh.max < 20) %>%
+  .$SimulationName %>%
+  stringr::str_split("_") %>%
+  map_chr(2) %>%
+  as.numeric() %>%
+  sort()
+
+positions[bad,] %>% arrange(x, y)
+ggplot(positions[bad,], aes(x = x, y = y)) + geom_point()
+
+
+
+
+##### GOOD vs. BAD #####
+good <- read_hisafe(path = "/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe_testing/",
+                   simu.names = "bug_good",
+                   date.max   = "2018-01-01")
+
+diag_hisafe_ts(good, "trees")
+diag_hisafe_ts(good, "plot")
+
+bad <- read_hisafe(path = "/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe_testing/",
+                    simu.names = "bug_bad",
+                    date.max   = "2018-01-01")
+
+diag_hisafe_ts(bad, "trees")
+diag_hisafe_ts(bad, "plot")
+
+
+
+
+##### TREE PLACEMENT SHALLOW TWO#####
+NAME <- "tree_loc_shallow"
+
+TREE.INITIALIZATION <- c(tree_init_params(treeX = 0.5, treeY = 0.5),
+                         tree_init_params(treeX = 2.5, treeY = 2.5))
+
+hip <- define_hisafe(path                 = PATH,
+                     force = TRUE,
+                     exp.name            = NAME,
+                     profiles            = c(PROFILES, "voxels"),
+                     template            = "restinclieres_agroforestry",
+                     simulationYearStart  = 2000,
+                     nbSimulations       = 2,
+                     treeLineOrientation = 0,
+                     geometryOption      = 3,
+                     plotWidth           = 5,
+                     plotHeight          = 5,
+                     spacingBetweenRows  = 5,
+                     spacingWithinRows   = 5,
+                     ph                  = 8.4,
+                     lueMax              = 0.7,
+                     weatherFile         = A3.WEATHER,
+                     tree.initialization = TREE.INITIALIZATION,
+                     layers = list(layer_params()[[1]][-5,]),
+                     layer.initialization = list(layer_init_params()[[1]][-5,]))
+
+build_hisafe(hip)
+
+build_cluster_script(hip          = hip,
+                     cluster.path = paste0("/nfs/work/hisafe/isabelle/treeloc/", NAME, "/"),
+                     email        = "wolzkevin@gmail.com")
+
+hop <- read_hisafe(hip        = hip)
+
+diag_hisafe_ts(hop, "annualtree")
+diag_hisafe_ts(hop, "annualplot")
