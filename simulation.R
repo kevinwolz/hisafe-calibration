@@ -2,7 +2,7 @@
 ### SIMULATION
 ### Author: Kevin J. Wolz
 
-PROFILES   <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells")
+PROFILES   <- c("annualplot", "annualtree", "annualcrop", "plot", "trees", "climate", "monthCells", "cells")#, "voxels")
 A2.WEATHER <- "./raw_data/restinclieres_A2-1994-2034.wth"
 A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2034.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2034.wth"
@@ -113,15 +113,3 @@ if(RUN.SIMU) {
              num.cores   = 4,
              capsis.path = "/Applications/Capsis/")
 }
-
-## READ
-hop <- read_hisafe(path       = PATH,
-                   simu.names = c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4", "Monocrop-A2", "Monocrop-A3"),
-                   profiles   = PROFILES,
-                   date.min   = "1995-01-01",
-                   date.max   = "2018-01-01")
-
-dum <- map(paste0(PATH, c("analysis/cycles/", "analysis/calibration/")),
-           dir.create,
-           showWarnings = FALSE,
-           recursive    = TRUE)
