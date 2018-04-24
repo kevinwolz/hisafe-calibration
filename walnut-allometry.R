@@ -2,13 +2,14 @@
 ### WALNUT ALLOMETRY PARAMETERIZATION
 ### Author: Kevin J. Wolz
 
-## Restinclieres Data
-allom.data <- measured.trees %>%
-  mutate(height = measured.height / 100) %>%
-  mutate(dbh    = measured.dbh    / 100) %>%
-  select(System:species, dbh, height)
+## INRA Data
+allom.data <- measured.trees.all %>%
+  mutate(height = measured.height / 100) %>% # Conver cm to m
+  mutate(dbh    = measured.dbh    / 100) %>% # Conver cm to m
+  select(System:species, dbh, height) %>%
+  filter(plot != "Restinclieres-A4") # do not use Forestry trees
 
-## McPherson Data
+## McPherson Data - BLACK WALNUT
 mcp <- read_csv(paste0(input.path, "McPherson_Data_PROCESSED.csv"), col_types = cols()) %>%
   filter(scientific.name == "Juglans nigra") %>%
   filter(!(dbh.cm > 50  & height.m < 12)) %>%
@@ -19,6 +20,7 @@ mcp <- read_csv(paste0(input.path, "McPherson_Data_PROCESSED.csv"), col_types = 
   mutate(crown.area = pi * crown.diam.m^2)
 
 ##### HEIGHT vs. DBH #####
+## McPherson Model
 mcp.dbh.model <- nls(height ~ a*dbh^b,
                      data = mcp,
                      start = list(a = 31, b = 0.72))
@@ -29,7 +31,7 @@ mcp.X.RANGE <- range(mcp$dbh, na.rm = TRUE)
 mcp.h.dbh.pred <- tibble(dbh = seq(mcp.X.RANGE[1], mcp.X.RANGE[2], length.out = 1000))
 mcp.h.dbh.pred$height <- predict(mcp.dbh.model, mcp.h.dbh.pred)
 
-
+## Restinclieres ALL Model
 h.dbh.model <- nls(height ~ a*dbh^b,
                    data = allom.data,
                    start = list(a = 31, b = 0.72))
@@ -40,14 +42,13 @@ X.RANGE <- range(allom.data$dbh, na.rm = TRUE)
 h.dbh.pred <- tibble(dbh = seq(X.RANGE[1], X.RANGE[2], length.out = 1000))
 h.dbh.pred$height <- predict(h.dbh.model, h.dbh.pred)
 
-
 h.dbh.coefs <- round(as.numeric(coef(h.dbh.model)), c(1,3))
 mcp.h.dbh.coefs <- round(as.numeric(coef(mcp.dbh.model)), c(1,3))
 
 h.dbh.plot <- ggplot(allom.data, aes(x = dbh, y = height)) +
   labs(x = "DBH (m)",
        y = "Height (m)") +
-  geom_point(shape = 21, size = 1, color = "grey30", na.rm = TRUE) +
+  geom_point(shape = 21, size = 1, color = "grey30", na.rm = TRUE, aes(color = System)) +
   geom_point(data = mcp, size = 1, na.rm = TRUE, color = "red") +
   geom_line(data = h.dbh.pred, color = "black", size = 1.5) +
   geom_line(data = mcp.h.dbh.pred, color = "red", size = 1.5) +
@@ -63,7 +64,8 @@ h.dbh.plot <- ggplot(allom.data, aes(x = dbh, y = height)) +
 
 ggsave_fitmax(paste0(allom.path, "H_vs_DBH.jpg"), h.dbh.plot, scale = 1)
 
-##### CROWN VOL vs. DBC #####
+##### CROWN AREA vs. DCB #####
+## McPherson
 mcp.ca.model <- nls(crown.area ~ a*dcb^b,
                     data  = mcp,
                     start = list(a = 401, b = 1.38))
@@ -76,17 +78,39 @@ mcp.ca.dcb.pred$crown.area <- predict(mcp.ca.model, mcp.ca.dcb.pred)
 
 mcp.ca.dcb.coefs <- round(as.numeric(coef(mcp.ca.model)), c(0,2))
 
+
+## Talbot
+talbot.crown.area <- read.table(paste0(input.path, "Ahoup_dhel.txt"), header = TRUE, sep = "\t", dec = ".")
+names(talbot.crown.area)[3:4] <- c("crown.area", "dcb")
+talbot.ca.model <- nls(crown.area ~ a*dcb^b,
+                    data  = talbot.crown.area,
+                    start = list(a = 401, b = 1.38))
+summary(talbot.ca.model)
+coef(talbot.ca.model)
+
+talbot.X.RANGE <- range(talbot.crown.area$dcb, na.rm = TRUE)
+talbot.ca.dcb.pred <- tibble(dcb = seq(talbot.X.RANGE[1], talbot.X.RANGE[2], length.out = 1000))
+talbot.ca.dcb.pred$crown.area <- predict(talbot.ca.model, talbot.ca.dcb.pred)
+
+talbot.ca.dcb.coefs <- round(as.numeric(coef(talbot.ca.model)), c(0,2))
+
 ca.dcb.plot <- ggplot(mcp, aes(x = dcb, y = crown.area)) +
   labs(x = "DCB (m)",
        y = "Crown Area (m2)") +
   geom_point(data = mcp, size = 1, na.rm = TRUE, color = "red") +
+  geom_point(data = talbot.crown.area, size = 1, na.rm = TRUE, color = "black") +
   geom_line(data = mcp.ca.dcb.pred, color = "red", size = 1.5) +
+  geom_line(data = talbot.ca.dcb.pred, color = "black", size = 1.5) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   theme_ggEHD() +
   ggalt::annotate_textp(label = paste0("y = ", mcp.ca.dcb.coefs[1], "x ^ ", mcp.ca.dcb.coefs[2]), x = 0.95, y = 0.1, hjust = 0, vjust = 1, size = 15, color = "red") +
   ggalt::annotate_textp(label = "p < 0.01", x = 0.95, y = 0.05, hjust = 0, vjust = 1, size = 15, color = "red") +
-  ggalt::annotate_textp(label = "McPherson et al.", x = 0.95, y = 0.15, hjust = 0, vjust = 1, size = 15, color = "red")
+  ggalt::annotate_textp(label = "McPherson et al.", x = 0.95, y = 0.15, hjust = 0, vjust = 1, size = 15, color = "red") +
+  ggalt::annotate_textp(label = paste0("y = ", talbot.ca.dcb.coefs[1], "x ^ ", talbot.ca.dcb.coefs[2]), x = 0.95, y = 0.25, hjust = 0, vjust = 1, size = 15, color = "black") +
+  ggalt::annotate_textp(label = "p < 0.01", x = 0.95, y = 0.2, hjust = 0, vjust = 1, size = 15, color = "black") +
+  ggalt::annotate_textp(label = "Restinclieres", x = 0.95, y = 0.3, hjust = 0, vjust = 1, size = 15, color = "black")
+
 
 ggsave_fitmax(paste0(allom.path, "Crown_Area_vs_DCB.jpg"), ca.dcb.plot, scale = 1)
 
@@ -120,46 +144,48 @@ ggplot(filter(phenol, thresh == 1), aes(x = date, y = perc)) +
 
 
 ##### LEAF AREA vs. CROWN VOLUME #####
+talbot.leaf.area <- read.table(paste0(input.path, "vhoup_sf.txt"), header = TRUE, sep = "\t", dec = ".")
+names(talbot.leaf.area)[3:4] <- c("leaf.area", "crown.volume")
 ## Data from Talbot plot via WebPlotDigitizer
-la.cv <- as.data.frame(matrix(c(9.21184432984775, 17.573841563273447,
-                                9.198859450607117, 20.52326413364355,
-                                10.499202357418085, 25.15966101515255,
-                                21.71999300406509, 26.437214133908554,
-                                15.145934142812493, 19.687726904139794,
-                                66.5326662462039, 47.55857770522735,
-                                58.559950392461346, 58.50403591246598,
-                                67.78106963605241, 63.992664868216735,
-                                90.20224611911111, 71.1825780020246,
-                                66.40467243654633, 76.63145732744687,
-                                92.1110233674827, 87.61746015762051,
-                                131.0044466586461, 103.25416973622146,
-                                146.15038080145854, 112.9634144402457,
-                                148.10182265304934, 119.70733672176847,
-                                103.76773496006489, 139.87868412823758,
-                                151.3628823251944, 128.98092547739304,
-                                182.35036914156694, 140.39463432990073,
-                                302.4530821863357, 159.92124273244255,
-                                244.1862190681627, 194.82300814602422,
-                                350.4247910494433, 213.49022954086524), ncol = 2, byrow = TRUE))
-names(la.cv) <- c("crown.volume", "leaf.area")
+# la.cv <- as.data.frame(matrix(c(9.21184432984775, 17.573841563273447,
+#                                 9.198859450607117, 20.52326413364355,
+#                                 10.499202357418085, 25.15966101515255,
+#                                 21.71999300406509, 26.437214133908554,
+#                                 15.145934142812493, 19.687726904139794,
+#                                 66.5326662462039, 47.55857770522735,
+#                                 58.559950392461346, 58.50403591246598,
+#                                 67.78106963605241, 63.992664868216735,
+#                                 90.20224611911111, 71.1825780020246,
+#                                 66.40467243654633, 76.63145732744687,
+#                                 92.1110233674827, 87.61746015762051,
+#                                 131.0044466586461, 103.25416973622146,
+#                                 146.15038080145854, 112.9634144402457,
+#                                 148.10182265304934, 119.70733672176847,
+#                                 103.76773496006489, 139.87868412823758,
+#                                 151.3628823251944, 128.98092547739304,
+#                                 182.35036914156694, 140.39463432990073,
+#                                 302.4530821863357, 159.92124273244255,
+#                                 244.1862190681627, 194.82300814602422,
+#                                 350.4247910494433, 213.49022954086524), ncol = 2, byrow = TRUE))
+# names(la.cv) <- c("crown.volume", "leaf.area")
 
 la.cv.model <- nls(leaf.area ~ a*crown.volume^b,
-                    data  = la.cv,
+                    data  = talbot.leaf.area,
                     start = list(a = 5.34, b = 0.61))
 summary(la.cv.model)
 coef(la.cv.model)
 plot(la.cv.model)
 
-la.cv.X.RANGE <- range(la.cv$crown.volume, na.rm = TRUE)
+la.cv.X.RANGE <- range(talbot.leaf.area$crown.volume, na.rm = TRUE)
 la.cv.pred <- tibble(crown.volume = seq(la.cv.X.RANGE[1], la.cv.X.RANGE[2], length.out = 1000))
 la.cv.pred$leaf.area <- predict(la.cv.model, la.cv.pred)
 
 la.cv.coefs <- round(as.numeric(coef(la.cv.model)), c(2,2))
 
-ca.dcb.plot <- ggplot(la.cv, aes(x = crown.volume, y = leaf.area)) +
+ca.dcb.plot <- ggplot(talbot.leaf.area, aes(x = crown.volume, y = leaf.area)) +
   labs(x = "Crown volume (m3)",
        y = "Leaf area (m2)") +
-  geom_point(data = la.cv, size = 1, na.rm = TRUE, color = "red") +
+  geom_point(data = talbot.leaf.area, size = 1, na.rm = TRUE, color = "red") +
   geom_line(data = la.cv.pred, color = "red", size = 1.5) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +

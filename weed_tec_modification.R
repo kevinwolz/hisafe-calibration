@@ -5,7 +5,7 @@ source("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafer/R/para
 
 management    <- readr::read_csv("./raw_data/restinclieres_weed_management.csv",    col_types = readr::cols())
 fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization.csv", col_types = readr::cols()) # USE SAME FERTILIZATION AS MAIN CROP
-NEW.TECS <- data.frame(year = 1994:2016, file.name = paste0("W", 1994:2016, "-", 1995:2017, ".tec"))
+NEW.TECS <- data.frame(year = 1994:2017, file.name = paste0("W", 1994:2017, "-", 1995:2018, ".tec"))
 
 get_original_tec <- function(x, num.disturb, num.fert) {
   num.disturb <- max(num.disturb, 1)
@@ -73,6 +73,7 @@ for(path in paths) {
         tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Nminres  <- rep(0, num.disturb)
         tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_eaures   <- rep(0, num.disturb)
       } else if(crop == "baresoil") {
+        tec$SOIL_MANAGEMENT$P_nbjres$value                          <- 0
         tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table <- NULL
       } else {
         stop(paste0("crop ", crop, " not supported"))

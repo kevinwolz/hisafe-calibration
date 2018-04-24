@@ -7,7 +7,7 @@ management    <- readr::read_csv("./raw_data/restinclieres_crop_management.csv",
 fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization.csv", col_types = readr::cols())
 #management    <- readr::read_csv("./raw_data/restinclieres_crop_management-WHEAT_ONLY.csv",    col_types = readr::cols())
 #fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization-WHEAT_ONLY.csv", col_types = readr::cols())
-NEW.TECS <- data.frame(year = 1994:2016, file.name = paste0("R", 1994:2016, "-", 1995:2017, ".tec"))
+NEW.TECS <- data.frame(year = 1994:2017, file.name = paste0("R", 1994:2017, "-", 1995:2018, ".tec"))
 
 get_original_tec <- function(x, num.disturb, num.fert) {
   num.disturb <- max(num.disturb, 1)

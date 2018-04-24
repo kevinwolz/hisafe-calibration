@@ -2,114 +2,127 @@
 ### TREES
 ### Author: Kevin J. Wolz
 
-## MODELED TREE BIOMETRICS
-modeled.trees <- hop$trees %>%
-  filter(SimulationName %in% c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")) %>%
-  rename(plot = SimulationName) %>%
-  rename(date = Date) %>%
-  rename(modeled.dbh = dbh) %>%
-  mutate(modeled.pruned.height = crownBaseHeight * 100) %>%
-  mutate(modeled.height = height * 100) %>%
+##### PREP MODELED TREE BIOMETRICS #####
+cal.modeled.trees <- hop$trees %>%
+  filter(SimulationName %in% CALIBRATION.SIMUATIONS) %>%
+  mutate(SimulationName        = as.character(factor(SimulationName, levels = paste0("Restinclieres-A", 2:4), labels = paste0("A", 2:4)))) %>%
+  filter(id == 1) %>%
+  rename(plot                  = SimulationName) %>%
+  rename(date                  = Date) %>%
+  rename(modeled.dbh           = dbh) %>%
+  mutate(modeled.pruned.height = crownBaseHeight) %>%
+  mutate(modeled.height        = height) %>%
   select(plot, date, Year, Month, Day, modeled.dbh, modeled.height, modeled.pruned.height)
 
-measured.single <- measured.trees %>%
-  group_by(plot, year) %>%
-  summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
-            measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE),
-            measured.height        = mean(measured.height,        na.rm = TRUE))
-
-modeled.single <- modeled.trees %>%
+cal.modeled.annual <- cal.modeled.trees %>%
   rename(year = Year) %>%
   filter(Month == 12, Day == 15) %>%
-  select(-date, -Month, -Day)
+  select(-date, -Month, -Day) %>%
+  arrange(year) %>%
+  group_by(plot) %>%
+  mutate(modeled.dbh.inc    = c(NA, diff(modeled.dbh))) %>%
+  mutate(modeled.height.inc = c(NA, diff(modeled.height)) * 100) %>%
+  ungroup() %>%
+  arrange(plot, year)
 
-single <- modeled.single %>%
-  left_join(measured.single, by = c("plot", "year"))
+cal.annual <- cal.modeled.annual %>%
+  left_join(cal.measured.annual, by = c("plot", "year"))
 
-
-## MEASURED vs. MODELED TIMESERIES
+##### MEASURED vs. MODELED TIMESERIES #####
 vars <- c("dbh", "pruned.height", "height")
 labs <- c("DBH", "Pruned height", "Tree height")
 
 for(i in vars){
-  #mvm <- mvm_annotation(single[[paste0("modeled.", i)]], single[[paste0("measured.", i)]])
-  #grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
+  plot.annotation <- data.frame(plot = paste0("A", 2:4))
+  plot.annotation$date <- min(cal.measured.trees$date, na.rm = TRUE)
+  plot.annotation[[paste0("measured.", i)]] <- max(cal.measured.trees[[paste0("measured.", i)]], na.rm = TRUE)
 
-  ts.plot <- ggplot(measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
-    labs(x = "Year",
-         y = paste(labs[match(i, vars)], "(cm)"),
-         title = "Hi-sAFe Calibration",
-         caption = "Measured: Boxplots\nModeled: Line") +
-    facet_wrap(~plot, nrow = 1) +
-    geom_boxplot(aes(group = year), color = "grey50", na.rm = TRUE, outlier.shape = NA) +
-    scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+  ts.plot <- ggplot(cal.measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
+    labs(x       = "Year",
+         caption = "Measured: Boxplots\nModeled: Line",
+         y       = paste(labs[match(i, vars)], "(cm)")) +
+    facet_wrap(~plot) +
+    geom_boxplot(aes(group = date), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
+    scale_x_date(date_breaks = "5 years", date_labels = "%Y") + # seq(lubridate::ymd("1995-01-01"), lubridate::ymd("2015-01-01"), "5 years")
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-    geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 1) +
-    #annotation_custom(grob) +
-    theme_hisafe_ts() +
-    theme(plot.title = element_text(hjust = 0.5))
+    geom_line(data = cal.modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 0.75) +
+    geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
+    theme_hisafe_ts(strip.background = element_blank(),
+                    strip.text       = element_blank(),
+                    panel.grid       = element_blank()) #+
+    #theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 
-  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_timeseries.jpg"), ts.plot, scale = 1.5)
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_ts_", gsub("\\.", "_", i), ".png"), ts.plot, scale = 1.5)
 }
 
-## MEASURED vs. MODELED INCREMENT SCATTERPLOT
-vars <- c("dbh", "height")
-labs <- c("DBH increment", "tree height increment")
-
-get_increment <- function(x, df) {
-  df <- subset(df, plot == x)
-  increment <- tibble(year            = df$year[2:nrow(df)],
-                      plot            = x,
-                      modeled.dbh     = diff(df$modeled.dbh),
-                      modeled.height  = diff(df$modeled.height),
-                      measured.dbh    = diff(df$measured.dbh),
-                      measured.height = diff(df$measured.height))
-  return(increment)
-}
-increment.trees <- purrr::map_dfr(unique(single$plot), get_increment, df = single)
+##### MEASURED vs. MODELED INCREMENT SCATTERPLOT #####
+vars <- c("dbh.inc", "height.inc")
+labs <- c("DBH increment", "Height increment")
 
 for(i in vars){
-  if(i == "dbh") { LIMITS <- c(0,2.5) } else { LIMITS <- c(0,75) }
-  #mvm <- mvm_annotation(increment.trees[[paste0("modeled.", i)]], increment.trees[[paste0("measured.", i)]])
-  #grob <- grobTree(textGrob(mvm, x = 0.05, y = 0.95, hjust = 0, vjust = 1))
+  if(i == "dbh.inc") LIMITS <- c(0, 3) else LIMITS <- c(0, 150)
+  mvm <- mvm_annotation(cal.annual[[paste0("modeled.", i)]], cal.annual[[paste0("measured.", i)]])
+  #grob <- grobTree(textGrob(mvm, x = 1.05, y = 0.95, hjust = 0, vjust = 1))
 
-  mvm.inc.plot <- ggplot(increment.trees, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
-    labs(x = paste("Modeled", labs[match(i, vars)], "(cm)"),
-         y = paste("Measured", labs[match(i, vars)], "(cm)"),
-         title = "Hi-sAFe Calibration") +
-    facet_wrap(~plot, nrow = 1) +
+  # plot.annotation <- data.frame(plot = paste0("A", 2:4))
+  # plot.annotation[[paste0("modeled.",  i)]] <- LIMITS[1]
+  # plot.annotation[[paste0("measured.", i)]] <- LIMITS[2]
+
+  cal.annual$ub <- cal.annual[[paste0("measured.", i)]] + cal.annual[[paste0("measured.", i, ".sd")]]
+  cal.annual$lb <- cal.annual[[paste0("measured.", i)]] - cal.annual[[paste0("measured.", i, ".sd")]]
+
+  mvm.inc.plot <- ggplot(cal.annual, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
+    labs(x    = paste("Modeled", labs[match(i, vars)], "(cm)"),
+         caption = mvm,
+         fill = NULL,
+         y    = paste("Measured", labs[match(i, vars)], "(cm)")) +
     geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-    #geom_errorbar(aes(ymin = measured.yield - measured.yield.sd,
-    #                  ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
-    geom_point(aes(fill = year), shape = 21, na.rm = TRUE) +
-    scale_fill_viridis(option = "magma") +
-    scale_x_continuous(limits = LIMITS) +
+    # geom_errorbar(aes(ymin = lb,
+    #                   ymax = ub),
+    #               alpha = 0.5, na.rm = TRUE) +
+    geom_point(aes(fill = plot), shape = 21, na.rm = TRUE) +
+    scale_fill_manual(values = c("white", "grey70", "black")) +
+    scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
     scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
+    #geom_text(data = plot.annotation, aes(label = label), hjust = 0, vjust = 1, size = 5) +
     #annotation_custom(grob) +
     coord_equal() +
-    theme_hisafe_ts() +
-    theme(plot.title = element_text(hjust = 0.5))
+    theme_hisafe_ts(strip.background = element_blank(),
+                    strip.text       = element_blank(),
+                    panel.grid       = element_blank())
 
-  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_scatterplot.jpg"), mvm.inc.plot, scale = 1.7)
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_sp_", gsub("\\.", "_", i), ".png"), mvm.inc.plot, scale = 1.1)
 }
 
-## MEASURED vs. MODELED INCREMENT SCATTERPLOT
-vars <- c("dbh", "height")
+##### MEASURED vs. MODELED INCREMENT TIMESERIES #####
+vars <- c("dbh.inc", "height.inc")
 labs <- c("DBH increment", "tree height increment")
 
 for(i in vars){
-  ts.inc.plot <- ggplot(increment.trees, aes(x = year)) +
-    labs(x = "Year",
-         y = paste(labs[match(i, vars)], "(cm)"),
-         title = "Hi-sAFe Calibration",
-         caption = "Measured: Points\nModeled: Line") +
-    facet_wrap(~plot, nrow = 1) +
-    geom_line(aes_string(y = paste0("modeled.", i)), na.rm = TRUE) +
-    geom_point(aes_string(y = paste0("measured.", i)), na.rm = TRUE) +
-    scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-    coord_equal() +
-    theme_hisafe_ts() +
-    theme(plot.title = element_text(hjust = 0.5))
+  plot.annotation <- data.frame(plot = paste0("A", 2:4))
+  plot.annotation$year <- min(cal.annual$year, na.rm = TRUE)
+  plot.annotation[[paste0("measured.", i)]] <- max(cal.annual[[paste0("measured.", i)]], na.rm = TRUE)
 
-  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_", gsub("\\.", "_", i), "_increment_timeseries.jpg"), ts.inc.plot, scale = 1.7)
+  cal.annual$ub <- cal.annual[[paste0("measured.", i)]] + cal.annual[[paste0("measured.", i, ".sd")]]
+  cal.annual$lb <- cal.annual[[paste0("measured.", i)]] - cal.annual[[paste0("measured.", i, ".sd")]]
+
+  ts.inc.plot <- ggplot(cal.annual, aes(x = year)) +
+    labs(x = "Year",
+         #title = "Hi-sAFe Calibration",
+         caption = "Measured: Points\nModeled: Line",
+         y = paste(labs[match(i, vars)], "(cm)")) +
+    facet_wrap(~plot) +
+    geom_point(aes_string(y = paste0("measured.", i)), na.rm = TRUE, color = "grey50") +
+    geom_line(aes_string(y  = paste0("modeled.", i)),  na.rm = TRUE) +
+    scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+    # geom_errorbar(aes(ymin = lb,
+    #                   ymax = ub),
+    #               color = "grey50", na.rm = TRUE) +
+    geom_text(data = plot.annotation, aes_string(label = "plot", y = paste0("measured.", i)), hjust = 0, vjust = 1, size = 5) +
+    coord_equal() +
+    theme_hisafe_ts(strip.background = element_blank(),
+                    strip.text       = element_blank(),
+                    panel.grid       = element_blank())
+
+  ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_ts_", gsub("\\.", "_", i), ".png"), ts.inc.plot, scale = 1.7)
 }

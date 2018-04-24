@@ -2,20 +2,25 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20180226"
-BUILD.SIMU  <- TRUE
-RUN.SIMU    <- FALSE
-CLUSTER     <- TRUE
+NAME <- "calibration_20180424"
+BUILD.SIMU <- TRUE
+RUN.SIMU   <- FALSE
+CLUSTER    <- TRUE
+PROFILES   <- c("annualCells", "plot", "trees", "climate", "monthCells")#, "cells")#, "voxels")
+cbPalette  <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+ALL.SIMUATIONS         <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4", "Monocrop-A2", "Monocrop-A3", "Castries")
+CALIBRATION.SIMUATIONS <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")
+VALIDATION.SIMUATIONS  <- c("Castries")
 
 ## REQUIRED LIBRARIES
 library(hisafer)
 library(tidyverse)
-library(readr)
-library(stringr)
 library(lubridate)
 library(viridis)
 library(grid)
 library(ggalt)
+library(DeLuciatoR)
 
 ## PATHS
 input.path      <- "./raw_data/"
@@ -31,4 +36,3 @@ source("field_data.R")
 source("trees.R")
 source("crops.R")
 source("diagnostics.R")
-

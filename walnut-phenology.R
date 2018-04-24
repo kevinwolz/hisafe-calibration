@@ -134,7 +134,7 @@ pheno <- purrr::map_df(unique(pheno.data$year), find_pheno, df = pheno.data) %>%
 
 SEASON.DURATION <- pheno %>%
   #filter(year > 2012) %>%
-  group_by(plot) %>%
+  #group_by(plot) %>%
   summarize(season.dur.mean   = round(mean(season.duration,   na.rm = TRUE)),
             season.dur.median = round(median(season.duration, na.rm = TRUE)))
 round(mean(pheno$season.duration, na.rm = TRUE))
@@ -238,23 +238,23 @@ find_lfd <- function(y, df) {
 }
 
 search.df <- expand.grid(year = unique(pheno.data$year), plot = unique(pheno.data$plot))
-lf <- purrr::map2_df(search.df$year, search.df$plot, find_lfd_p_ALT, df = pheno.data) %>%
-  mutate(lf.duration = as.numeric(lf.end - lf.start))
+# lf <- purrr::map2_df(search.df$year, search.df$plot, find_lfd_p_ALT, df = pheno.data) %>%
+#   mutate(lf.duration = as.numeric(lf.end - lf.start))
 
 lf <- purrr::map_df(unique(pheno.data$year), find_lfd, df = pheno.data) %>%
   mutate(lf.duration = as.numeric(lf.end - lf.start))
 
-LF.DURATION <- lf %>%
-  group_by(plot) %>%
-  summarize(lf.dur.mean   = round(mean(lf.duration, na.rm = TRUE)),
-            lf.dur.median = round(median(lf.duration, na.rm = TRUE)))
+# LF.DURATION <- lf %>%
+#   group_by(plot) %>%
+#   summarize(lf.dur.mean   = round(mean(lf.duration, na.rm = TRUE)),
+#             lf.dur.median = round(median(lf.duration, na.rm = TRUE)))
 round(mean(lf$lf.duration,   na.rm = TRUE))
-round(median(lf$lf.duration, na.rm = TRUE))
-boxplot(lf$lf.duration)
-
-# ggplot(lf, aes(x = year, y = lf.duration, color = plot)) +
-#   geom_line() +
-#   theme_hisafe_ts()
+# round(median(lf$lf.duration, na.rm = TRUE))
+# boxplot(lf$lf.duration)
+#
+#  ggplot(lf, aes(x = year, y = lf.duration, color = plot)) +
+#    geom_line() +
+#    theme_hisafe_ts()
 
 ##### BUD BURST DURATION #####
 find_bbd_p <- function(y, p, df) {
