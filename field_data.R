@@ -76,7 +76,9 @@ restinclieres.trees <- restinclieres.trees %>%
   inner_join(tibble(year = seq(min(restinclieres.trees$year), max(restinclieres.trees$year), 1), i = 1), by = "i") %>%
   select(-i) %>%
   left_join(restinclieres.trees, by = c("plot", "rowtree.id", "year")) %>%
-  mutate(date = ymd(paste0(year, "-12-15")))
+  mutate(date = ymd(paste0(year, "-12-15"))) %>%
+  mutate(row.id  = purrr::map_chr(str_split(rowtree.id, "-"), 1)) %>%
+  mutate(tree.id = as.numeric(purrr::map_chr(str_split(rowtree.id, "-"), 2)))
 
 ## Remove individual tree-year points that are sharp jumps or negative growth
 bad.dbh    <-  read_csv(paste0(input.path, "Bad_Tree_DBH_data.csv"),    col_types = cols()) %>%
@@ -93,17 +95,17 @@ restinclieres.trees <- select(restinclieres.trees, -bad.check)
 
 A2.LIVING.TREES <- restinclieres.trees %>%
   filter(plot == "Restinclieres-A2") %>%
-  filter(year == 2014) %>%
+  filter(year == 2017) %>%
   filter(!is.na(measured.dbh)) %>%
   .$rowtree.id
 A3.LIVING.TREES <- restinclieres.trees %>%
   filter(plot == "Restinclieres-A3") %>%
-  filter(year == 2014) %>%
+  filter(year == 2017) %>%
   filter(!is.na(measured.dbh)) %>%
   .$rowtree.id
 A4.LIVING.TREES <- restinclieres.trees %>%
   filter(plot == "Restinclieres-A4") %>%
-  filter(year == 2014) %>%
+  filter(year == 2017) %>%
   filter(!is.na(measured.dbh)) %>%
   .$rowtree.id
 
@@ -137,32 +139,45 @@ castries.trees <- castries.trees %>%
   left_join(castries.trees, by = c("plot", "id", "year")) %>%
   mutate(date = ymd(paste0(year, "-12-15")))
 
-
 ## Unfiltered data for use in building allometries
 measured.trees.all <- restinclieres.trees %>%
-  bind_rows(castries.trees) %>%
+  bind_rows(castries.trees)
+
+measured.trees.allom <- measured.trees.all %>%
+  filter(!is.na(measured.dbh)) %>%
   group_by(plot, year, row.id) %>%
   arrange(plot, year, row.id, tree.id) %>%
   mutate(spacing.1 = c(NA, diff(tree.id))) %>%
   mutate(spacing.2 = c(diff(tree.id), NA)) %>%
   ungroup()
 
-measured.trees.all$spacing.1[measured.trees.all$spacing.1 < 1] <- NA
-measured.trees.all$spacing.1[measured.trees.all$spacing.1 > 6] <- NA
-measured.trees.all$spacing.2[measured.trees.all$spacing.2 < 1]<- NA
-measured.trees.all$spacing.2[measured.trees.all$spacing.2 > 6] <- NA
+measured.trees.allom$spacing.1[measured.trees.allom$spacing.1 < 1] <- NA
+measured.trees.allom$spacing.1[measured.trees.allom$spacing.1 > 6] <- NA
+measured.trees.allom$spacing.2[measured.trees.allom$spacing.2 < 1] <- NA
+measured.trees.allom$spacing.2[measured.trees.allom$spacing.2 > 6] <- NA
 
-measured.trees.all <- measured.trees.all %>%
+measured.trees.allom <- measured.trees.allom %>%
   mutate(mean.spacing = (spacing.1 + spacing.2) / 2) %>%
-  mutate(even.spacing = as.numeric(spacing.1 == spacing.2) * spacing.1)
+  mutate(even.spacing = as.numeric(spacing.1 == spacing.2) * spacing.1) %>%
+  rename(height        = measured.height) %>%
+  rename(dbh           = measured.dbh) %>%
+  rename(pruned.height = measured.pruned.height) %>%
+  filter(!(plot %in% c("Restinclieres-A4", VALIDATION.SIMULATIONS))) %>%                   # Remove forestry trees or data from validation sites
+  filter(!(plot == "Restinclieres-A2" & row.id %in% c("C", "G") & year >= 2004)) %>%       # Don't use rows C&G after 2004 because they were pruned high
+  mutate(plot = str_replace(plot, "-A2|-A3", "")) %>%                                      # Treat all restinclieres as one plot for allometry
+  filter(!(plot == "Restinclieres" & spacing.1 < 2 & year >= 2004) | is.na(spacing.1)) %>% # Remove trees that are too close together
+  filter(!(plot == "Restinclieres" & spacing.2 < 2 & year >= 2004) | is.na(spacing.2)) %>% # Remove trees that are too close together
+  filter(!(plot == "Restinclieres" & spacing.1 < 3 & year >= 2014) | is.na(spacing.1)) %>% # Remove trees that are too close together
+  filter(!(plot == "Restinclieres" & spacing.2 < 3 & year >= 2014) | is.na(spacing.2))     # Remove trees that are too close together
 
 ## Filtered data for calibration/validation
 measured.trees <- measured.trees.all %>%
   mutate(measured.dbh = measured.dbh * 100) %>% # Convert m to cm for calibration/validation
   ## Filter A2 Trees
   filter(!(plot == "Restinclieres-A2" & rowtree.id   %in% A2.EDGE.TREES)) %>%      # Don't use edge trees
-  filter(!(plot == "Restinclieres-A2" & row.id       %in% c("D", "G"))) %>%        # Don't use rows D&G because after 2013 they were adjacent to pollarded E&F
-  filter(!(plot == "Restinclieres-A2" & row.id       %in% c("C", "G"))) %>%        # Don't use rows C&G because after ~2004 they were pruned high
+  filter(!(plot == "Restinclieres-A2" & row.id       %in% c("D", "G"))) %>%        # Don't use rows D&G bc after 2013 they were adjacent to pollarded E&F
+  filter(!(plot == "Restinclieres-A2" & row.id       %in% c("C", "G"))) %>%        # Don't use rows C&G bc ~2004 they were pruned high
+  filter(!(plot == "Restinclieres-A2" & row.id       %in% LETTERS[1:6])) %>%       # Don't use rows A-F bc they're far from the two piezos used in water table model
   filter(!(plot == "Restinclieres-A2" & !(rowtree.id %in% A2.LIVING.TREES))) %>%   # Use only trees still living today
   ## Filter A3 Trees
   filter(!(plot == "Restinclieres-A3" & rowtree.id   %in% A3.EDGE.TREES)) %>%      # Don't use edge trees
@@ -172,99 +187,112 @@ measured.trees <- measured.trees.all %>%
   filter(!(plot == "Restinclieres-A4" & !(rowtree.id %in% A4.LIVING.TREES))) %>%   # Use only trees still living today
   ## Filter Castries Trees
   filter(!(plot == "Castries"         & rowtree.id   %in% CASTRIE.EDGE.TREES)) %>% # Don't use edge trees
-  filter(!(plot == "Castries"         & alley.crop   %in% c("L", "FL")))           # Only use trees that had Fescue as alley crop
+  filter(!(plot == "Castries"         & alley.crop   %in% c("L", "FL"))) %>%       # Only use trees that had Fescue as alley crop
+  ## Calculate growth in DBH and height
+  group_by(plot, rowtree.id) %>%
+  arrange(plot, rowtree.id, date) %>%
+  mutate(measured.dbh.inc    = c(NA, diff(measured.dbh))) %>%
+  mutate(measured.height.inc = c(NA, diff(measured.height)) * 100) %>%
+  ungroup()
+
+## Remove trees with negative growth in height or dbh
+measured.trees$measured.height[measured.trees$measured.height.inc < 0] <- NA
+measured.trees$measured.height.inc[measured.trees$measured.height.inc < 0] <- NA
+
+measured.trees$measured.dbh[measured.trees$measured.dbh.inc < 0] <- NA
+measured.trees$measured.dbh.inc[measured.trees$measured.dbh.inc < 0] <- NA
 
 ##### DBH-EVEN SPACING COMPARISON PLOTS #####
-all.spacing.data <- measured.trees %>%
-  group_by(plot, year) %>%
-  summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
-            N            = n()) %>%
-  mutate(even.spacing = 0) %>%
-  ungroup()
-
-spacing.data <- measured.trees %>%
-  group_by(plot, year, even.spacing) %>%
-  summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
-            N            = n()) %>%
-  bind_rows(all.spacing.data) %>%
-  filter(even.spacing > 0) %>%
-  ungroup()
-
-even.spacing.plot <- ggplot(all.spacing.data, aes(x = year, y = measured.dbh)) +
-  labs(x       = "Year",
-       y       = "DBH (m)",
-       title   = "Growth x Even Spacing",
-       color   = "Spacing") +
-  facet_wrap(~plot) +
-  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  geom_line(color = "black", size = 1.5, na.rm = TRUE) +
-  geom_line(data = spacing.data, aes(color = factor(even.spacing)), na.rm = TRUE) +
-  scale_color_manual(values = cbPalette) +
-  theme_hisafe_ts() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggsave_fitmax("./output/DBH_Even_Spacing_timeseries.jpg", even.spacing.plot)
-
-even.spacing.n.plot <- ggplot(all.spacing.data, aes(x = year, y = N)) +
-  labs(x       = "Year",
-       y       = "N",
-       title   = "Growth x Even Spacing",
-       color   = "Spacing") +
-  facet_wrap(~plot) +
-  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  geom_line(color = "black", size = 1.5, na.rm = TRUE) +
-  geom_line(data = spacing.data, aes(color = factor(even.spacing)), na.rm = TRUE) +
-  scale_color_manual(values = cbPalette) +
-  theme_hisafe_ts() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggsave_fitmax("./output/DBH_Even_Spacing_N_timeseries.jpg", even.spacing.n.plot)
+# all.spacing.data <- measured.trees %>%
+#   group_by(plot, year) %>%
+#   summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
+#             N            = n()) %>%
+#   mutate(even.spacing = 0) %>%
+#   ungroup()
+#
+# spacing.data <- measured.trees %>%
+#   group_by(plot, year, even.spacing) %>%
+#   summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
+#             N            = n()) %>%
+#   bind_rows(all.spacing.data) %>%
+#   filter(even.spacing > 0) %>%
+#   ungroup()
+#
+# even.spacing.plot <- ggplot(all.spacing.data, aes(x = year, y = measured.dbh)) +
+#   labs(x       = "Year",
+#        y       = "DBH (m)",
+#        title   = "Growth x Even Spacing",
+#        color   = "Spacing") +
+#   facet_wrap(~plot) +
+#   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+#   geom_line(color = "black", size = 1.5, na.rm = TRUE) +
+#   geom_line(data = spacing.data, aes(color = factor(even.spacing)), na.rm = TRUE) +
+#   scale_color_manual(values = cbPalette) +
+#   theme_hisafe_ts() +
+#   theme(plot.title = element_text(hjust = 0.5))
+#
+# ggsave_fitmax("./output/DBH_Even_Spacing_timeseries.jpg", even.spacing.plot)
+#
+# even.spacing.n.plot <- ggplot(all.spacing.data, aes(x = year, y = N)) +
+#   labs(x       = "Year",
+#        y       = "N",
+#        title   = "Growth x Even Spacing",
+#        color   = "Spacing") +
+#   facet_wrap(~plot) +
+#   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+#   geom_line(color = "black", size = 1.5, na.rm = TRUE) +
+#   geom_line(data = spacing.data, aes(color = factor(even.spacing)), na.rm = TRUE) +
+#   scale_color_manual(values = cbPalette) +
+#   theme_hisafe_ts() +
+#   theme(plot.title = element_text(hjust = 0.5))
+#
+# ggsave_fitmax("./output/DBH_Even_Spacing_N_timeseries.jpg", even.spacing.n.plot)
 
 ##### DBH-MEAN SPACING COMPARISON PLOTS #####
-all.spacing.data <- measured.trees %>%
-  group_by(plot, year) %>%
-  summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
-            N            = n()) %>%
-  mutate(mean.spacing = 0) %>%
-  ungroup()
-
-spacing.data <- measured.trees %>%
-  group_by(plot, year, mean.spacing) %>%
-  summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
-            N            = n()) %>%
-  bind_rows(all.spacing.data) %>%
-  filter(mean.spacing > 0) %>%
-  ungroup()
-
-mean.spacing.plot <- ggplot(all.spacing.data, aes(x = year, y = measured.dbh)) +
-  labs(x       = "Year",
-       y       = "DBH (m)",
-       title   = "Growth x Mean Spacing",
-       color   = "Spacing") +
-  facet_wrap(~plot) +
-  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  geom_line(color = "black", size = 1.5, na.rm = TRUE) +
-  geom_line(data = spacing.data, aes(color = factor(mean.spacing)), na.rm = TRUE) +
-  scale_color_manual(values = cbPalette) +
-  theme_hisafe_ts() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggsave_fitmax("./output/DBH_Mean_Spacing_timeseries.jpg", mean.spacing.plot)
-
-mean.spacing.n.plot <- ggplot(all.spacing.data, aes(x = year, y = N)) +
-  labs(x       = "Year",
-       y       = "N",
-       title   = "Growth x Mean Spacing",
-       color   = "Spacing") +
-  facet_wrap(~plot) +
-  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  geom_line(color = "black", size = 1.5, na.rm = TRUE) +
-  geom_line(data = spacing.data, aes(color = factor(mean.spacing)), na.rm = TRUE) +
-  scale_color_manual(values = cbPalette) +
-  theme_hisafe_ts() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-ggsave_fitmax("./output/DBH_Mean_Spacing_N_timeseries.jpg", mean.spacing.n.plot)
+# all.spacing.data <- measured.trees %>%
+#   group_by(plot, year) %>%
+#   summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
+#             N            = n()) %>%
+#   mutate(mean.spacing = 0) %>%
+#   ungroup()
+#
+# spacing.data <- measured.trees %>%
+#   group_by(plot, year, mean.spacing) %>%
+#   summarize(measured.dbh = mean(measured.dbh, na.rm = TRUE),
+#             N            = n()) %>%
+#   bind_rows(all.spacing.data) %>%
+#   filter(mean.spacing > 0) %>%
+#   ungroup()
+#
+# mean.spacing.plot <- ggplot(all.spacing.data, aes(x = year, y = measured.dbh)) +
+#   labs(x       = "Year",
+#        y       = "DBH (m)",
+#        title   = "Growth x Mean Spacing",
+#        color   = "Spacing") +
+#   facet_wrap(~plot) +
+#   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+#   geom_line(color = "black", size = 1.5, na.rm = TRUE) +
+#   geom_line(data = spacing.data, aes(color = factor(mean.spacing)), na.rm = TRUE) +
+#   scale_color_manual(values = cbPalette) +
+#   theme_hisafe_ts() +
+#   theme(plot.title = element_text(hjust = 0.5))
+#
+# ggsave_fitmax("./output/DBH_Mean_Spacing_timeseries.jpg", mean.spacing.plot)
+#
+# mean.spacing.n.plot <- ggplot(all.spacing.data, aes(x = year, y = N)) +
+#   labs(x       = "Year",
+#        y       = "N",
+#        title   = "Growth x Mean Spacing",
+#        color   = "Spacing") +
+#   facet_wrap(~plot) +
+#   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+#   geom_line(color = "black", size = 1.5, na.rm = TRUE) +
+#   geom_line(data = spacing.data, aes(color = factor(mean.spacing)), na.rm = TRUE) +
+#   scale_color_manual(values = cbPalette) +
+#   theme_hisafe_ts() +
+#   theme(plot.title = element_text(hjust = 0.5))
+#
+# ggsave_fitmax("./output/DBH_Mean_Spacing_N_timeseries.jpg", mean.spacing.n.plot)
 
 ##### FILTER FOR TREES OF PROPER, EVEN SPACING #####
 # measured.trees <- measured.trees %>%
@@ -277,16 +305,19 @@ ggsave_fitmax("./output/DBH_Mean_Spacing_N_timeseries.jpg", mean.spacing.n.plot)
 write_csv(measured.trees, paste0(data.path, "tree_biometrics_PROCESSED.csv"))
 
 ##### PLOT MAPS #####
-map.data <- measured.trees.all
 nums <- as.character(1:26)
 names(nums) <- LETTERS
-map.data$row.id <- str_replace_all(map.data$row.id, nums)
-map.data$row.id <- as.numeric(map.data$row.id)
+
+map.data <- measured.trees.all %>%
+  mutate(row.id  = as.numeric(str_replace_all(row.id, nums)))
 map.data$row.id[map.data$plot  == "Restinclieres-A3"] <- -1 * map.data$row.id[map.data$plot  == "Restinclieres-A3"]
 
-piezos <- read_csv(paste0(input.path, "restinclieres_piezometer_locations.csv"), col_types = cols())
-piezos$row.id <- str_replace_all(piezos$row.id, nums)
-piezos$row.id <- as.numeric(piezos$row.id)
+piezos <- read_csv(paste0(input.path, "restinclieres_piezometer_info.csv"), col_types = cols()) %>%
+  filter(rowtree.id != "station") %>%
+  mutate(plot = paste0("Restinclieres-", plot)) %>%
+  mutate(row.id  = purrr::map_chr(str_split(rowtree.id, "-"), 1)) %>%
+  mutate(tree.id = as.numeric(purrr::map_chr(str_split(rowtree.id, "-"), 2))) %>%
+  mutate(row.id  = as.numeric(str_replace_all(row.id, nums)))
 piezos$row.id[piezos$plot  == "Restinclieres-A3"] <- -1 * piezos$row.id[piezos$plot  == "Restinclieres-A3"]
 
 for(y in c(2000)) { # 2017
@@ -307,13 +338,47 @@ for(y in c(2000)) { # 2017
       labs(title  = p) +
       guides(size = FALSE, color = FALSE) +
       geom_point(na.rm = TRUE, aes(size = measured.dbh, color = used)) +
-      geom_point(data = map.pizeo.data, shape = 4) +
       theme_void() +
       theme(aspect.ratio = 2,
             plot.title   = element_text(hjust = 0.5, size = 30))
+    if(p != "Castries") dbh.map <- dbh.map + geom_point(data = map.pizeo.data, shape = 4)
     ggsave_fitmax(paste0("./output/DBH_Map_", p, "-", y, ".jpg"), dbh.map, scale = 1)
   }
 }
+
+##### PREP MEASURED DATA FOR CALIBRATION/VALIDATION #####
+cal.measured.trees <- measured.trees %>%
+  filter(plot %in% CALIBRATION.SIMULATIONS) %>%
+  mutate(plot = as.character(factor(plot, levels = paste0("Restinclieres-A", 2:4), labels = paste0("A", 2:4))))
+
+cal.measured.annual <- cal.measured.trees %>%
+  group_by(plot, year) %>%
+  summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
+            measured.dbh.inc.sd    = sd(measured.dbh.inc,         na.rm = TRUE),
+            measured.dbh.inc       = mean(measured.dbh.inc,       na.rm = TRUE),
+            measured.height        = mean(measured.height,        na.rm = TRUE),
+            measured.height.inc.sd = sd(measured.height.inc,      na.rm = TRUE),
+            measured.height.inc    = mean(measured.height.inc,    na.rm = TRUE),
+            measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
+  ungroup()
+
+cal.measured.annual[is.na(cal.measured.annual)] <- NA
+
+val.measured.trees <- measured.trees %>%
+   filter(plot %in% VALIDATION.SIMULATIONS)
+
+val.measured.annual <- val.measured.trees %>%
+  group_by(plot, year) %>%
+  summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
+            measured.dbh.inc.sd    = sd(measured.dbh.inc,         na.rm = TRUE),
+            measured.dbh.inc       = mean(measured.dbh.inc,       na.rm = TRUE),
+            measured.height        = mean(measured.height,        na.rm = TRUE),
+            measured.height.inc.sd = sd(measured.height.inc,      na.rm = TRUE),
+            measured.height.inc    = mean(measured.height.inc,    na.rm = TRUE),
+            measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
+  ungroup()
+
+val.measured.annual[is.na(val.measured.annual)] <- NA
 
 ##### MEASURED CROP YIELD #####
 ## raw units are hundredweight/ha
@@ -343,31 +408,3 @@ mvm_annotation = function(m, o) {
                   "\nSRCC = ", srcc.est, ", p = ", srcc.p)
   return(label)
 }
-
-##### PREP MEASURED DATA FOR CALIBRATION #####
-cal.measured.trees <- measured.trees %>%
-  filter(plot %in% CALIBRATION.SIMUATIONS) %>%
-  mutate(plot = as.character(factor(plot, levels = paste0("Restinclieres-A", 2:4), labels = paste0("A", 2:4)))) %>%
-  group_by(plot, rowtree.id) %>%
-  arrange(plot, rowtree.id, date) %>%
-  mutate(measured.dbh.inc    = c(NA, diff(measured.dbh))) %>%
-  mutate(measured.height.inc = c(NA, diff(measured.height)) * 100) %>%
-  ungroup()
-
-## Remove trees with negative growth in height or dbh
-cal.measured.trees$measured.height[cal.measured.trees$measured.height.inc < 0] <- NA
-cal.measured.trees$measured.height.inc[cal.measured.trees$measured.height.inc < 0] <- NA
-
-cal.measured.trees$measured.dbh[cal.measured.trees$measured.dbh.inc < 0] <- NA
-cal.measured.trees$measured.dbh.inc[cal.measured.trees$measured.dbh.inc < 0] <- NA
-
-cal.measured.annual <- cal.measured.trees %>%
-  group_by(plot, year) %>%
-  summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
-            measured.dbh.inc.sd    = sd(measured.dbh.inc,         na.rm = TRUE),
-            measured.dbh.inc       = mean(measured.dbh.inc,       na.rm = TRUE),
-            measured.height        = mean(measured.height,        na.rm = TRUE),
-            measured.height.inc.sd = sd(measured.height.inc,      na.rm = TRUE),
-            measured.height.inc    = mean(measured.height.inc,    na.rm = TRUE),
-            measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
-  ungroup()

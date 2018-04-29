@@ -2,8 +2,8 @@
 ### CALIBRATION
 ### Author: Kevin J. Wolz
 
-REGENERATE.LHS <- TRUE
-N.SIMUS <- 250
+REGENERATE.LHS <- FALSE
+N.SIMUS <- 1000
 
 library(hisafer)
 library(tidyverse)
@@ -11,6 +11,7 @@ library(ggradar)
 library(lhs)
 library(scales)
 library(rPref)
+library(lubridate)
 
 cbPalette  <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
@@ -22,7 +23,6 @@ PARAMS <- read_csv(paste0(input.path, "hisafe_calibration_parameters.csv"), col_
   filter(calibrate == TRUE)
 
 N.PARAMS <- nrow(PARAMS)
-N.SWEEPS <- 2#100
 
 round_vals <- function(df) {
   for(i in names(df)) {
@@ -41,10 +41,14 @@ A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 
 ##### GENERATE LATIN HYPRECUBE SAMPLE SET #####
 if(REGENERATE.LHS) {
-  calib.sample <- lat.hyp.samp <- optimumLHS(n         = N.SIMUS,
-                                             k         = N.PARAMS,
-                                             maxSweeps = N.SWEEPS,
-                                             verbose   = TRUE)
+  # calib.sample <- lat.hyp.samp <- geneticLHS(n         = N.SIMUS,
+  #                                            k         = N.PARAMS,
+  #                                            pop       = 100,
+  #                                            gen       = 10,
+  #                                            pMut      = 0.25,
+  #                                            verbose   = TRUE)
+  calib.sample <- lat.hyp.samp <- improvedLHS(n = N.SIMUS,
+                                              k = N.PARAMS)
   write.table(lat.hyp.samp, paste0(lhs.output.path, "hisafe_calibration_LHS_raw.csv"), sep = ",", row.names = FALSE, col.names = FALSE)
 
   for(i in 1:ncol(calib.sample)) calib.sample[, i] <- scales::rescale(calib.sample[, i], c(PARAMS$param.min[i], PARAMS$param.max[i]), c(0, 1))
@@ -128,12 +132,22 @@ abort <- purrr::map(abort.files,
   mutate(id    = as.numeric(str_remove(SimulationName, "LHS_A[2-4]_"))) %>%
   left_join(calib.sample,  by = "id")
 
-table(abort$dist)
+# table(abort$dist)
 
 aborted.ids <- abort$SimulationName %>%
   str_remove("LHS_A3_") %>%
   as.numeric()
 non.aborted.ids <- calib.sample$id[!(calib.sample$id %in% aborted.ids)]
+
+## FAILURE DIAGNOSTICS
+# filter(calib.sample, id %in% non.aborted.ids)
+# filter(abort, event == "2007-11") %>% select(-(SimulationName:full.scene)) #46
+# filter(abort, event == "2004-8")  %>% select(-(SimulationName:full.scene)) #4
+# filter(abort, event == "2002-4")  %>% select(-(SimulationName:full.scene)) #4
+# ggplot(filter(abort, event == "2002-4"),
+#        aes(x = colonisationThreshold)) +
+#   geom_histogram() +
+#   facet_wrap(~dist)
 
 initial.summary <- tibble(event = "initial", remaining.simulations = N.SIMUS)
 abort.summary <- abort %>%
@@ -164,7 +178,7 @@ build_hisafe(hip           = A2.hip,
              summary.files = FALSE)
 
 build_cluster_script(hip            = A2.hip,
-                     launch.call    = "ScriptCalib",
+                     launch.call    = "ScriptGen",
                      default.folder = "A2",
                      cluster.path   = "/lustre/lecomtei/LHS/LHS_A2",
                      script.path    = PATH,
@@ -186,7 +200,7 @@ build_hisafe(hip           = A4.hip,
              summary.files = FALSE)
 
 build_cluster_script(hip            = A4.hip,
-                     launch.call    = "ScriptCalib",
+                     launch.call    = "ScriptGen",
                      default.folder = "A4",
                      cluster.path   = "/lustre/lecomtei/LHS/LHS_A4",
                      script.path    = PATH,
@@ -197,65 +211,113 @@ build_cluster_script(hip            = A4.hip,
 ##### READ ALL SIMULATIONS #####
 ## rename all output files to trees.txt
 output.files <- list.files(PATH, pattern = "annualDBH\\.txt", full.names = TRUE, recursive = TRUE)
-new.names    <- str_replace(output.files, "annualDBH\\.txt$", "annualtree.txt")
+new.names    <- str_replace(output.files, "annualDBH\\.txt$", "annualTrees.txt")
 dum <- file.rename(output.files, new.names)
 
 ## read simulations that did not abort
 A2.trees <- read_hisafe(path          = paste0(PATH, "/LHS_A2"),
                         simu.names    = paste0("LHS_A2_", non.aborted.ids),
-                        profiles      = "annualtree",
+                        profiles      = "annualTrees",
                         show.progress = FALSE,
-                        read.inputs   = FALSE)$annualtree
+                        read.inputs   = FALSE)$annualTrees
 A3.trees <- read_hisafe(path          = paste0(PATH, "/LHS_A3"),
-                        simu.names    = paste0("LHS_A3_", non.aborted.ids),
-                        profiles      = "annualtree",
+                        simu.names    = paste0("LHS_A3_", 1:N.SIMUS),
+                        profiles      = "annualTrees",
                         show.progress = FALSE,
-                        read.inputs   = FALSE)$annualtree
+                        read.inputs   = FALSE)$annualTrees
 A4.trees <- read_hisafe(path          = paste0(PATH, "/LHS_A4"),
                         simu.names    = paste0("LHS_A4_", non.aborted.ids),
-                        profiles      = "annualtree",
+                        profiles      = "annualTrees",
                         show.progress = FALSE,
-                        read.inputs   = FALSE)$annualtree
+                        read.inputs   = FALSE)$annualTrees
 
-modeled.data <- bind_rows(A2.trees, A3.trees, A4.trees) %>%
+modeled.data.all <- bind_rows(A2.trees, A3.trees, A4.trees) %>%
   filter(id == 1) %>% # remove second tree
   mutate(id   = as.numeric(str_remove(SimulationName, "LHS_A[2-4]_"))) %>%
   mutate(plot = purrr::map_chr(str_split(SimulationName, "_"), 2)) %>%
   mutate(year = Year - 1) %>%
   rename(modeled.dbh = dbh) %>%
   mutate(modeled.dbh.inc = c(NA, diff(modeled.dbh))) %>%
-  select(plot, id, year, modeled.dbh, modeled.dbh.inc)
+  mutate(aborted = id %in% aborted.ids) %>%
+  select(plot, id, year, modeled.dbh, modeled.dbh.inc, aborted)
+
+modeled.data <- modeled.data.all %>%
+  filter(aborted == FALSE) %>%
+  select(-aborted)
 
 ##### SETUP DBH MvM #####
-data.path       <- "./output/processed_data/"
+data.path <- "./output/processed_data/"
 CALIBRATION.SIMUATIONS <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")
+VALIDATION.SIMUATIONS  <- c("Castries")
 source("field_data.R")
 
-measured.data <- cal.measured.annual %>%
+measured.trees <- cal.measured.trees %>%
+  select(plot, year, measured.dbh, measured.dbh.inc)
+measured.annual <- cal.measured.annual %>%
   select(plot, year, measured.dbh, measured.dbh.inc)
 
 dbh.data <- modeled.data %>%
-  left_join(measured.data, by = c("plot", "year")) %>%
+  left_join(measured.annual, by = c("plot", "year")) %>%
   mutate(dbh.er2     = (measured.dbh     - modeled.dbh)     ^ 2) %>%
   mutate(dbh.inc.er2 = (measured.dbh.inc - modeled.dbh.inc) ^ 2)
 
-rmse_by_plot <- dbh.data %>%
+## Plot DBH timeseries
+plot.annotation <- data.frame(plot = c("A2", "A3", "A4"))
+plot.annotation$year <- min(measured.trees$year, na.rm = TRUE)
+plot.annotation$measured.dbh <- max(measured.trees$measured.dbh, na.rm = TRUE)
+
+dbh.ts.plot <- ggplot(measured.trees, aes(x = year, y = measured.dbh)) +
+  labs(x       = "Year",
+       y       = "DBH (cm)") +
+  facet_wrap(~plot) +
+  geom_boxplot(aes(group = year), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
+  #scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+  geom_line(data = modeled.data.all, aes(y = modeled.dbh, color = id, group = id, size = aborted), size = 0.75) +
+  geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
+  scale_size_manual(values = c(0.25, 0.5)) +
+  guides(color = FALSE) +
+  theme_hisafe_ts(strip.background = element_blank(),
+                  strip.text       = element_blank(),
+                  panel.grid       = element_blank())
+ggsave_fitmax(paste0(lhs.output.path, "DBH_timeseries_ALL_LHS_Simulations.png"), dbh.ts.plot)
+
+## Compute RMSE
+rmse.by.plot <- dbh.data %>%
   group_by(id, plot) %>%
   summarize(rmse.dbh     = sqrt(mean(dbh.er2,     na.rm = TRUE)),
             rmse.dbh.inc = sqrt(mean(dbh.inc.er2, na.rm = TRUE))) %>%
-  ungroup() %>%
+  ungroup()
+
+rmse.by.plot.dbh <- rmse.by.plot %>%
+  select(-rmse.dbh.inc) %>%
+  mutate(plot = factor(plot,
+                       levels = paste0("A", 2:4),
+                       labels = paste0("rmse.dbh.A", 2:4))) %>%
+  spread(key = "plot", value = "rmse.dbh")
+
+rmse.by.plot.dbh.inc <- rmse.by.plot %>%
+  select(-rmse.dbh) %>%
+  mutate(plot = factor(plot,
+                       levels = paste0("A", 2:4),
+                       labels = paste0("rmse.dbh.inc.A", 2:4))) %>%
+  spread(key = "plot", value = "rmse.dbh.inc")
+
+rmse.plot.mean <- rmse.by.plot %>%
   group_by(id) %>%
   summarize(rmse.dbh.p     = mean(rmse.dbh),
             rmse.dbh.inc.p = mean(rmse.dbh.inc))
 
-rmse_together <- dbh.data %>%
+rmse.together <- dbh.data %>%
   group_by(id) %>%
   summarize(rmse.dbh.t     = sqrt(mean(dbh.er2,     na.rm = TRUE)),
             rmse.dbh.inc.t = sqrt(mean(dbh.inc.er2, na.rm = TRUE)))
 
-lhs.data <- rmse_by_plot %>%
-  left_join(rmse_together, by = "id") %>%
-  left_join(calib.sample,  by = "id")
+lhs.data <- rmse.plot.mean %>%
+  left_join(rmse.together,    by = "id") %>%
+  left_join(rmse.by.plot.dbh, by = "id") %>%
+  left_join(rmse.by.plot.dbh.inc, by = "id") %>%
+  left_join(calib.sample,     by = "id")
 
 ##### ANALYZE DBH MvM #####
 rmse.common <- list(scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)),
@@ -294,21 +356,23 @@ lhs.data <- lhs.data %>%
   mutate(pareto = id %in% pareto.ids)
 
 ## Visualize solution space
-solution.space <- ggplot(lhs.data, aes(x     = rmse.dbh,
-                                       y     = rmse.dbh.inc,
-                                       size  = pareto,
-                                       color = pareto,
-                                       fill  = lueMax)) +
-  labs(x = "DBH RMSE",
-       y = "DBH increment RMSE") +
-  geom_point(shape = 21) +
-  scale_color_manual(values = c("transparent", "green")) +
-  scale_size_manual(values  = c(1, 3)) +
-  viridis::scale_fill_viridis(option = "magma") +
-  guides(color = FALSE, size = FALSE) +
-  rmse.common
-ggsave_fitmax(paste0(lhs.output.path, "LHS_Solution_Space.png"), solution.space)
-
+names.to.plot <- names(lhs.data)[which(names(lhs.data) == "rmse.dbh.A2"):which(names(lhs.data) == tail(PARAMS$param.name, 1))]
+for(i in names.to.plot) {
+  solution.space <- ggplot(lhs.data, aes_string(x     = "rmse.dbh",
+                                                y     = "rmse.dbh.inc",
+                                                size  = "pareto",
+                                                color = "pareto",
+                                                fill  = i)) +
+    labs(x = "DBH RMSE",
+         y = "DBH increment RMSE") +
+    geom_point(shape = 21) +
+    scale_color_manual(values = c("transparent", "green")) +
+    scale_size_manual(values  = c(1, 3)) +
+    viridis::scale_fill_viridis(option = "magma") +
+    guides(color = FALSE, size = FALSE) +
+    rmse.common
+  ggsave_fitmax(paste0(lhs.output.path, "LHS_Solution_Space_", i, ".png"), solution.space)
+}
 
 scale_from_ranges <- function(x) {
   orig.names <- names(x)
@@ -343,3 +407,8 @@ radar.plot <- ggradar(radar.data,
                       legend.text.size    = 10) +
   scale_color_manual(values = cbPalette)
 ggsave_fitmax(paste0(lhs.output.path, "Pareto_Radar_Plot.png"), radar.plot)
+
+##### GENERATE FULL CALIBRATION SIMULATION #####
+winner.common.params <- calib.sample %>%
+  filter(id == pareto.ids[2]) %>%
+  select(-id)

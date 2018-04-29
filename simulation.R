@@ -7,19 +7,8 @@ A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2018.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
-common.params <- list()
-                      # nbSimulations = 5,
-                      # mainCropSpecies  = "weed-restinclieres-Talbot.plt",
-                      # interCropSpecies = "weed-restinclieres-Talbot.plt",
-                      # mainCropItk  = "weed-restinclieres.tec",
-                      # interCropItk = "weed-restinclieres.tec",
-                      # treePruningYears = 3,
-                      # treePruningProp = 0.4,
-                      # treePruningMaxHeight = 0.9,
-                      # treePruningDays = 215,
-                      # treeThinningIds = 2,
-                      # treeThinningYears = 5,
-                      # treeThinningDays = 150)
+#common.params <- list()
+common.params <- winner.common.params
 
 ## DEFINE
 A2.hip <- define_hisafe(path           = PATH,
@@ -78,7 +67,7 @@ if(BUILD.SIMU) {
 }
 
 if(CLUSTER) {
-  build_cluster_script(simu.names   = ALL.SIMUATIONS,
+  build_cluster_script(simu.names   = ALL.SIMULATIONS,
                        hip          = NULL,
                        script.path  = PATH,
                        cluster.path = paste0("/lustre/lecomtei/calibration/", NAME, "/"),

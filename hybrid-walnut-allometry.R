@@ -2,20 +2,7 @@
 ### WALNUT ALLOMETRY PARAMETERIZATION
 ### Author: Kevin J. Wolz
 
-## Filter data to what is appropriate for allometries
-allom.data <- measured.trees.all %>%
-  mutate(height           = measured.height       ) %>%
-  mutate(dbh              = measured.dbh          ) %>%
-  mutate(pruned.height    = measured.pruned.height) %>%
-  select(-measured.dbh, -measured.height, -measured.pruned.height) %>%
-  filter(!(plot %in% c("Restinclieres-A4", "Castries", "NDL"))) %>%                        # Remove forestry trees or data from validation sites
-  filter(!(plot == "Restinclieres-A2" & row.id %in% c("C", "G") & year >= 2004))           # Don't use rows C&G after 2004 because they were pruned high
-  mutate(plot = str_replace(plot, "-A2|-A3", "")) %>%                                      # Treat all restinclieres as one plot for allometry
-  filter(!(plot == "Restinclieres" & spacing.1 < 2 & year >= 2004) | is.na(spacing.1)) %>% # Remove trees that are too close together
-  filter(!(plot == "Restinclieres" & spacing.2 < 2 & year >= 2004) | is.na(spacing.2)) %>% # Remove trees that are too close together
-  filter(!(plot == "Restinclieres" & spacing.1 < 3 & year >= 2014) | is.na(spacing.1)) %>% # Remove trees that are too close together
-  filter(!(plot == "Restinclieres" & spacing.2 < 3 & year >= 2014) | is.na(spacing.2)) %>% # Remove trees that are too close together
-
+allom.data <- measured.trees.allom
 
 ##### HEIGHT vs. DBH #####
 h_dbh <- function(data, site = NULL){
@@ -59,9 +46,9 @@ h_dbh <- function(data, site = NULL){
 #   theme(legend.position = c(0.8, 0.2))
 # ggsave_fitmax(paste0(allom.path, "H_vs_DBH.jpg"), h.dbh.plot, scale = 1)
 
-all.h.dbh <- h_dbh(test.data)
+all.h.dbh <- h_dbh(allom.data)
 
-h.dbh.plot <- ggplot(test.data, aes(x = dbh, y = height)) +
+h.dbh.plot <- ggplot(allom.data, aes(x = dbh, y = height)) +
   labs(x     = "DBH (m)",
        y     = "Height (m)",
        color = NULL) +
@@ -77,18 +64,25 @@ h.dbh.plot <- ggplot(test.data, aes(x = dbh, y = height)) +
 ggsave_fitmax(paste0(allom.path, "H_vs_DBH.jpg"), h.dbh.plot, scale = 1)
 
 ##### CROWN AREA vs. DCB #####
-talbot.crown.area <- read_csv(paste0(input.path, "talbot_crown_area_data.csv"), col_types = cols())
-talbot.crown.area$age <- NA
-talbot.crown.area$age[talbot.crown.area$plot == "Castries"]      <- talbot.crown.area$year[talbot.crown.area$plot == "Castries"]      - 1991
-talbot.crown.area$age[talbot.crown.area$plot == "Restinclieres"] <- talbot.crown.area$year[talbot.crown.area$plot == "Restinclieres"] - 1995
-talbot.crown.area$age[talbot.crown.area$plot == "NDL"]           <- NA
+#allom.crown.area <- allom.data %>%
+#  filter(!is.na(crown.area))
 
-# allom.data provies mostly Castries data in 2006 + 20 trees we measured in 2018,
-# whereas Talbot data provides mostly Castries data from 2004
-crown.area.data <- allom.data %>%
-  filter(!is.na(crown.area)) %>%
-  mutate(dcb = dbh * min(1, (1 + (1.3 - pruned.height) / height) ^ (1 / 0.709708))) %>%
-  bind_rows(talbot.crown.area)
+## 60 trees measured by Talbot in Restinclieres, Castires & NDL from 2004-2009
+talbot.crown.area <- read_csv(paste0(input.path, "talbot_crown_area_data.csv"), col_types = cols()) %>%
+  filter(plot != "Castries") %>%
+  mutate(age = year - 1995)
+
+## 20 trees measured by Kevin, Francesco & Marie in 2018 in Restinclieres-A2
+rest.crown.area <- read_csv(paste0(input.path, "Restinclieres_2018_Crown_Diam_Data.csv"), col_types = cols()) %>%
+  mutate(crown.area = pi * ((E + N + W + S) / 4) ^ 2) %>%
+  mutate(dcb = circ.crown.base / pi / 100) %>%
+  mutate(plot = "Restinclieres") %>%
+  mutate(age = year - 1995) %>%
+  filter(!is.na(dcb)) %>%
+  select(rowtree.id, year, plot, crown.area, dcb, age)
+
+crown.area.data <- talbot.crown.area %>%
+  bind_rows(rest.crown.area)
 
 ca.model <- nls(crown.area ~ a * dcb ^ b,
                 data  = crown.area.data,
@@ -100,6 +94,11 @@ ca.pred$crown.area <- predict(ca.model, ca.pred)
 ca.coefs <- round(as.numeric(coef(ca.model)), c(1,2))
 model.formula <- paste0("y = ", ca.coefs[1], "x ^ ", ca.coefs[2])
 
+old.pred <- tibble(dcb = seq(DCB.RANGE[1], DCB.RANGE[2], length.out = 1000)) %>%
+  mutate(crown.area = 638 * dcb ^ 1.69)
+talbot.pred <- tibble(dcb = seq(DCB.RANGE[1], DCB.RANGE[2], length.out = 1000)) %>%
+  mutate(crown.area = 401 * dcb ^ 1.38)
+
 ca.dcb.plot <- ggplot(crown.area.data, aes(x = dcb, y = crown.area)) +
   labs(x     = "DCB (m)",
        y     = "Crown area (m2)",
@@ -107,8 +106,9 @@ ca.dcb.plot <- ggplot(crown.area.data, aes(x = dcb, y = crown.area)) +
   geom_point(shape = 21, size = 1.2, na.rm = TRUE, aes(fill = plot), color = "black") +
   scale_fill_manual(values = c("white", "grey50", "black")) +
   guides(fill = guide_legend(override.aes = list(size = 2))) +
-  #scale_fill_viridis(option = "magma") +
   geom_line(data = ca.pred, color = "black", size = 1) +
+  #geom_line(data = old.pred, color = "red", size = 1) +
+  #geom_line(data = talbot.pred, color = "blue", size = 1) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   ggalt::annotate_textp(label = model.formula,      x = 0.05, y = 0.98, hjust = 1, vjust = 0, size = 15, color = "black") +
@@ -118,8 +118,9 @@ ca.dcb.plot <- ggplot(crown.area.data, aes(x = dcb, y = crown.area)) +
 ggsave_fitmax(paste0(allom.path, "Crown_Area_vs_DCB.jpg"), ca.dcb.plot, scale = 1)
 
 ##### LEAF AREA vs. CROWN VOLUME #####
-talbot.leaf.area <- read_csv(paste0(input.path, "talbot_leaf_area_data.csv"), col_types = cols())
-talbot.leaf.area$age <- NA
+talbot.leaf.area <- read_csv(paste0(input.path, "talbot_leaf_area_data.csv"), col_types = cols()) %>%
+  filter(plot != "Castries") %>%
+  mutate(age = NA)
 talbot.leaf.area$age[talbot.leaf.area$plot == "Castries"]      <- talbot.leaf.area$year[talbot.leaf.area$plot == "Castries"]      - 1991
 talbot.leaf.area$age[talbot.leaf.area$plot == "Restinclieres"] <- talbot.leaf.area$year[talbot.leaf.area$plot == "Restinclieres"] - 1995
 talbot.leaf.area$age[talbot.leaf.area$plot == "NDL"]           <- NA
