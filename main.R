@@ -2,11 +2,13 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20180426"
+NAME <- "calibration_20180623"
+MODEL.VERSION <- "Capsis4"
+
 BUILD.SIMU <- TRUE
 RUN.SIMU   <- FALSE
 CLUSTER    <- TRUE
-PROFILES   <- c("annualCells", "plot", "trees", "climate", "monthCells")#, "cells")#, "voxels")
+PROFILES   <- c("annualCells", "plot", "trees", "climate", "monthCells", "cells")#, "voxels")
 cbPalette  <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ALL.SIMULATIONS         <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4", "Monocrop-A2", "Monocrop-A3", "Castries")

@@ -79,7 +79,7 @@ rest.crown.area <- read_csv(paste0(input.path, "Restinclieres_2018_Crown_Diam_Da
   mutate(plot = "Restinclieres") %>%
   mutate(age = year - 1995) %>%
   filter(!is.na(dcb)) %>%
-  select(rowtree.id, year, plot, crown.area, dcb, age)
+  select(rowtree.id, year, plot, crown.area, dcb, age, pruned.height, low.branch.height)
 
 crown.area.data <- talbot.crown.area %>%
   bind_rows(rest.crown.area)
@@ -152,3 +152,72 @@ ca.dcb.plot <- ggplot(talbot.leaf.area, aes(x = crown.volume, y = leaf.area)) +
   theme(legend.position = c(0.8, 0.2))
 
 ggsave_fitmax(paste0(allom.path, "Leaf_Area_vs_Crown_Volume.jpg"), ca.dcb.plot, scale = 1)
+
+
+##### CHECK DCB vs. DBH & PRUNED HEIGHT VS LOWEST BRANCH HEIGHT #####
+allom.check <- rest.crown.area %>%
+  filter(rowtree.id != "I-48") %>%
+  mutate(plot = "Restinclieres-A2") %>%
+  mutate(year = year - 1) %>%
+  mutate(pruned.height.diff = low.branch.height - pruned.height) %>%
+  left_join(select(measured.trees.all, plot, year, rowtree.id, measured.dbh, measured.height), by = c("plot", "year", "rowtree.id")) %>%
+  rename(dbh = measured.dbh) %>%
+  rename(height = measured.height) %>%
+  mutate(dcb.calc = dbh * min(1, (1 + (1.3 - pruned.height) / height) ^ (1 / 0.72)))
+
+## PRUNED HEIGHT VS LOWEST BRANCH HEIGHT AS FUNCTION OF DBH
+# boxplot(allom.check$pruned.height.diff)
+# mean(allom.check$pruned.height.diff)
+phd.dbh.model <- nls(pruned.height.diff ~ a * dbh ^ b,
+                data  = allom.check,
+                start = list(a = 401, b = 1.38))
+DBH.RANGE <- range(allom.check$dbh, na.rm = TRUE)
+phd.dbh.pred <- tibble(dbh = seq(0, DBH.RANGE[2], length.out = 1000))
+phd.dbh.pred$pruned.height.diff <- predict(phd.dbh.model, phd.dbh.pred)
+phd.dbh.coefs <- round(as.numeric(coef(phd.dbh.model)), c(1,2))
+ggplot(allom.check, aes(x = dbh, y = pruned.height.diff)) + geom_point() +
+  geom_line(data = phd.dbh.pred, color = "black", size = 1)
+
+## CHECK DCB vs. DBH
+# lm(dcb.calc ~ dcb, data = allom.check)
+dcb.measured.data <- allom.check %>%
+  select(dbh, dcb, pruned.height, height) %>%
+  rename(dcb.measured = dcb)
+
+dcb.dbh.model <- nls(dcb ~ a * dbh ^ b,
+                     data  = allom.check,
+                     start = list(a = 401, b = 1.38))
+dcb.dbh.pred <- dcb.measured.data %>%
+  mutate(dcb.modeled = predict(dcb.dbh.model, dbh)) %>%
+  mutate(category = "a*DBH^b")
+dcb.dbh.coefs <- round(as.numeric(coef(dcb.dbh.model)), c(1,2))
+model.formula <- paste0("DCB = ", dcb.dbh.coefs[1], "DBH ^ ", dcb.dbh.coefs[2])
+
+dcb.dbh.model2 <- nls(dcb ~ dbh * min(1, (1 + (1.3 - pruned.height) / height) ^ (1 / b)),
+                     data  = allom.check,
+                     start = list(b = 0.72))
+dcb.dbh.pred2 <- dcb.measured.data %>%
+  mutate(dcb.modeled = predict(dcb.dbh.model2, dbh)) %>%
+  mutate(category = "Existing formula, new fit")
+dcb.dbh.coefs2 <- round(as.numeric(coef(dcb.dbh.model2)), 2)
+model.formula2 <- paste0("DCB = min(1, (1 + (1.3 - pruned.height) / height) ^ (1 / ", dcb.dbh.coefs2[1], "))")
+
+dcb.dbh.pred3 <- dcb.measured.data %>%
+  mutate(dcb.modeled = allom.check$dbh * min(1, (1 + (1.3 - pruned.height) / height) ^ (1 / 0.72))) %>%
+  mutate(category = "Existing Hi-sAFe")
+
+dcb.dbh.pred.data <- bind_rows(dcb.dbh.pred, dcb.dbh.pred2, dcb.dbh.pred3)
+
+dcb.dbh.plot <- ggplot(dcb.dbh.pred.data, aes(x = dcb.modeled, y = dcb.measured)) +
+  labs(x = "Modeled DCB (m)",
+       y = "Measured DCB (m)",
+       color = NULL) +
+  scale_x_continuous(limits = c(0, 0.35)) +
+  scale_y_continuous(limits = c(0, 0.35), sec.axis = sec_axis(~ ., labels = NULL)) +
+  facet_wrap(~category) +
+  geom_point() +
+  geom_abline() +
+  #ggalt::annotate_textp(label = model.formula, x = 0.05, y = 0.95, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = "p < 0.01",    x = 0.05, y = 0.89, hjust = 1, vjust = 0, size = 15, color = "black") +
+  theme_hisafe_ts()
+ggsave_fitmax(paste0(allom.path, "DCB_Fit_Approach_MvM.jpg"), dcb.dbh.plot, scale = 2)

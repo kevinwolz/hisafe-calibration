@@ -5,14 +5,14 @@
 for(STEP in c("calibration", "validation")) {
 
   if(STEP == "calibration") {
-    SIMS <- CALIBRATION.SIMUATIONS
-    NEW.SIM.NAMES <- purrr::map_chr(str_split(CALIBRATION.SIMUATIONS, "-"), 2)
+    SIMS <- CALIBRATION.SIMULATIONS
+    NEW.SIM.NAMES <- purrr::map_chr(str_split(CALIBRATION.SIMULATIONS, "-"), 2)
     plot.measured.annual <- cal.measured.annual
     plot.measured.trees  <- cal.measured.trees
     DATE.MIN <- "1995-01-01"
   } else {
-    SIMS <- VALIDATION.SIMUATIONS
-    NEW.SIM.NAMES <- VALIDATION.SIMUATIONS
+    SIMS <- VALIDATION.SIMULATIONS
+    NEW.SIM.NAMES <- VALIDATION.SIMULATIONS
     plot.measured.annual <- val.measured.annual
     plot.measured.trees  <- val.measured.trees
     DATE.MIN <- "1991-01-01"

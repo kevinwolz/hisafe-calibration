@@ -40,6 +40,9 @@ A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2018.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 
 ##### GENERATE LATIN HYPRECUBE SAMPLE SET #####
+old.top.sims <- read_csv(paste0("./output/LHS_Top_Sims.csv"), col_types = cols()) %>%
+  mutate(id = (N.SIMUS + 1):(N.SIMUS + nrow(.)))
+
 if(REGENERATE.LHS) {
   # calib.sample <- lat.hyp.samp <- geneticLHS(n         = N.SIMUS,
   #                                            k         = N.PARAMS,
@@ -57,10 +60,12 @@ if(REGENERATE.LHS) {
   calib.sample <- calib.sample %>%
     round_vals() %>%
     mutate(id = 1:nrow(.)) %>%
-    select(id, everything())
+    select(id, everything()) %>%
+    bind_rows(old.top.sims)
   write_csv(calib.sample, paste0(lhs.output.path, "hisafe_calibration_LHS.csv"))
 } else {
-  calib.sample <- read_csv(paste0(lhs.output.path, "hisafe_calibration_LHS.csv"), col_types = cols())
+  calib.sample <- read_csv(paste0(lhs.output.path, "hisafe_calibration_LHS.csv"), col_types = cols()) %>%
+    bind_rows(old.top.sims)
 }
 
 ##### BULID DEFAULT FOLDERS #####
@@ -149,7 +154,7 @@ non.aborted.ids <- calib.sample$id[!(calib.sample$id %in% aborted.ids)]
 #   geom_histogram() +
 #   facet_wrap(~dist)
 
-initial.summary <- tibble(event = "initial", remaining.simulations = N.SIMUS)
+initial.summary <- tibble(event = "initial", remaining.simulations = nrow(calib.sample))
 abort.summary <- abort %>%
   group_by(event) %>%
   summarize(remaining.simulations = -n()) %>%
@@ -231,15 +236,19 @@ A4.trees <- read_hisafe(path          = paste0(PATH, "/LHS_A4"),
                         show.progress = FALSE,
                         read.inputs   = FALSE)$annualTrees
 
-modeled.data.all <- bind_rows(A2.trees, A3.trees, A4.trees) %>%
+modeled.data.all <- bind_rows(A2.trees, A3.trees, A4.trees) %>% # A3.trees
   filter(id == 1) %>% # remove second tree
   mutate(id   = as.numeric(str_remove(SimulationName, "LHS_A[2-4]_"))) %>%
   mutate(plot = purrr::map_chr(str_split(SimulationName, "_"), 2)) %>%
   mutate(year = Year - 1) %>%
   rename(modeled.dbh = dbh) %>%
+  group_by(plot, id) %>%
   mutate(modeled.dbh.inc = c(NA, diff(modeled.dbh))) %>%
+  ungroup() %>%
   mutate(aborted = id %in% aborted.ids) %>%
   select(plot, id, year, modeled.dbh, modeled.dbh.inc, aborted)
+
+#ggplot(modeled.data.all, aes(x = year, y = modeled.dbh, group = id, color = aborted)) + geom_line()
 
 modeled.data <- modeled.data.all %>%
   filter(aborted == FALSE) %>%
@@ -247,8 +256,8 @@ modeled.data <- modeled.data.all %>%
 
 ##### SETUP DBH MvM #####
 data.path <- "./output/processed_data/"
-CALIBRATION.SIMUATIONS <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")
-VALIDATION.SIMUATIONS  <- c("Castries")
+CALIBRATION.SIMULATIONS <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")
+VALIDATION.SIMULATIONS  <- c("Castries")
 source("field_data.R")
 
 measured.trees <- cal.measured.trees %>%
@@ -260,27 +269,6 @@ dbh.data <- modeled.data %>%
   left_join(measured.annual, by = c("plot", "year")) %>%
   mutate(dbh.er2     = (measured.dbh     - modeled.dbh)     ^ 2) %>%
   mutate(dbh.inc.er2 = (measured.dbh.inc - modeled.dbh.inc) ^ 2)
-
-## Plot DBH timeseries
-plot.annotation <- data.frame(plot = c("A2", "A3", "A4"))
-plot.annotation$year <- min(measured.trees$year, na.rm = TRUE)
-plot.annotation$measured.dbh <- max(measured.trees$measured.dbh, na.rm = TRUE)
-
-dbh.ts.plot <- ggplot(measured.trees, aes(x = year, y = measured.dbh)) +
-  labs(x       = "Year",
-       y       = "DBH (cm)") +
-  facet_wrap(~plot) +
-  geom_boxplot(aes(group = year), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
-  #scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
-  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  geom_line(data = modeled.data.all, aes(y = modeled.dbh, color = id, group = id, size = aborted), size = 0.75) +
-  geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
-  scale_size_manual(values = c(0.25, 0.5)) +
-  guides(color = FALSE) +
-  theme_hisafe_ts(strip.background = element_blank(),
-                  strip.text       = element_blank(),
-                  panel.grid       = element_blank())
-ggsave_fitmax(paste0(lhs.output.path, "DBH_timeseries_ALL_LHS_Simulations.png"), dbh.ts.plot)
 
 ## Compute RMSE
 rmse.by.plot <- dbh.data %>%
@@ -394,7 +382,12 @@ radar.data <- lhs.data %>%
   select(-pareto) %>%
   scale_from_ranges() %>%
   rename(group = id) %>%
-  select(-rmse.dbh, -rmse.dbh.inc)
+  select(-(rmse.dbh:rmse.dbh.inc.A4))
+
+# radar.data <- calib.sample %>%
+#   filter(id %in% non.aborted.ids) %>%
+#   scale_from_ranges() %>%
+#   rename(group = id)
 
 radar.plot <- ggradar(radar.data,
                       gridline.mid.colour = "grey",
@@ -408,7 +401,64 @@ radar.plot <- ggradar(radar.data,
   scale_color_manual(values = cbPalette)
 ggsave_fitmax(paste0(lhs.output.path, "Pareto_Radar_Plot.png"), radar.plot)
 
-##### GENERATE FULL CALIBRATION SIMULATION #####
+##### DBH TIMESERIES PLOTS #####
+## ALL
+plot.annotation <- data.frame(plot = c("A2", "A3", "A4"))
+plot.annotation$year <- min(measured.trees$year, na.rm = TRUE)
+plot.annotation$measured.dbh <- max(measured.trees$measured.dbh, na.rm = TRUE)
+
+all.dbh.ts.plot <- ggplot(measured.trees, aes(x = year, y = measured.dbh)) +
+  labs(x       = "Year",
+       y       = "DBH (cm)") +
+  facet_wrap(~plot) +
+  geom_boxplot(aes(group = year), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
+  #scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+  geom_line(data = modeled.data.all, aes(y = modeled.dbh, color = id, group = id, size = aborted), size = 0.75) +
+  geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
+  scale_size_manual(values = c(0.25, 0.5)) +
+  guides(color = FALSE) +
+  theme_hisafe_ts(strip.background = element_blank(),
+                  strip.text       = element_blank(),
+                  panel.grid       = element_blank())
+ggsave_fitmax(paste0(lhs.output.path, "DBH_timeseries_ALL_LHS_Simulations.png"), all.dbh.ts.plot)
+
+## INTERESTING
+A2.best <- modeled.data.all %>%
+  filter(id == lhs.data$id[which(lhs.data$rmse.dbh.A2 == min(lhs.data$rmse.dbh.A2, na.rm = TRUE))]) %>%
+  mutate(sim = "A2 best")
+A3.best <- modeled.data.all %>%
+  filter(id == lhs.data$id[which(lhs.data$rmse.dbh.A3 == min(lhs.data$rmse.dbh.A3, na.rm = TRUE))]) %>%
+  mutate(sim = "A3 best")
+A4.best <- modeled.data.all %>%
+  filter(id == lhs.data$id[which(lhs.data$rmse.dbh.A4 == min(lhs.data$rmse.dbh.A4, na.rm = TRUE))]) %>%
+  mutate(sim  = "A4 best")
+pareto.sims <- modeled.data.all %>%
+  filter(id %in% pareto.ids) %>%
+  mutate(sim = as.character(id))
+best.data <- bind_rows(A2.best, A3.best, A4.best, pareto.sims)
+
+best.dbh.ts.plot <- ggplot(measured.trees, aes(x = year, y = measured.dbh)) +
+  labs(x       = "Year",
+       y       = "DBH (cm)",
+       color   = NULL) +
+  facet_wrap(~plot) +
+  geom_boxplot(aes(group = year), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
+  #scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
+  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+  geom_line(data = best.data, aes(y = modeled.dbh, color = sim), size = 0.75) +
+  geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
+  theme_hisafe_ts(strip.background = element_blank(),
+                  strip.text       = element_blank(),
+                  panel.grid       = element_blank())
+ggsave_fitmax(paste0(lhs.output.path, "DBH_timeseries.png"), best.dbh.ts.plot)
+
+##### GENERATE FULL CALIBRATION SIMULATION & SAVE TOP SIMS TO INCLUDE NEXT TIME #####
 winner.common.params <- calib.sample %>%
-  filter(id == pareto.ids[2]) %>%
+  filter(id == pareto.ids[3]) %>%
   select(-id)
+
+top.sims <- lhs.data %>%
+  filter(pareto == TRUE | rmse.dbh %in% head(sort(lhs.data$rmse.dbh), 5) | rmse.dbh.inc %in% head(sort(lhs.data$rmse.dbh.inc), 5))
+top.sims <- top.sims[, names(top.sims) %in% PARAMS$param.name]
+write_csv(top.sims, paste0("./output/LHS_Top_Sims.csv"), append = TRUE)

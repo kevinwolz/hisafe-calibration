@@ -141,7 +141,11 @@ castries.trees <- castries.trees %>%
 
 ## Unfiltered data for use in building allometries
 measured.trees.all <- restinclieres.trees %>%
-  bind_rows(castries.trees)
+  bind_rows(castries.trees) %>%
+  mutate(measured.pruned.height = pmax(0, measured.pruned.height + -18.5 * measured.dbh ^ 3.03))
+  # adjust pruned height from what was measured in the field as the connection point of the lowest branch
+  # to what is actually the lowest point of the canopy (using relationship between the difference between
+  # these two and measured dbh - this was measured in April 2018 on 20 trees in Restinclieres A2).
 
 measured.trees.allom <- measured.trees.all %>%
   filter(!is.na(measured.dbh)) %>%

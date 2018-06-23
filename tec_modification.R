@@ -30,11 +30,11 @@ get_original_tec <- function(x, num.disturb, num.fert) {
   ## INITIALIZE TABLES
   tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value <- list(data.frame(julres     = rep("NA", num.disturb),
                                                                                   coderes    = rep("NA", num.disturb),
-                                                                                  P_qres     = rep("NA", num.disturb),
-                                                                                  P_Crespc   = rep("NA", num.disturb),
-                                                                                  P_CsurNres = rep("NA", num.disturb),
-                                                                                  P_Nminres  = rep("NA", num.disturb),
-                                                                                  P_eaures   = rep("NA", num.disturb)))
+                                                                                  qres     = rep("NA", num.disturb),
+                                                                                  Crespc   = rep("NA", num.disturb),
+                                                                                  CsurNres = rep("NA", num.disturb),
+                                                                                  Nminres  = rep("NA", num.disturb),
+                                                                                  eaures   = rep("NA", num.disturb)))
   tec$TILLAGE_TABLE$tillage.table$value <- list(data.frame(jultrav  = rep("NA", num.disturb),
                                                       profres  = rep("NA", num.disturb),
                                                       proftrav = rep("NA", num.disturb)))
@@ -66,31 +66,31 @@ for(path in paths) {
     tec <- get_original_tec(crop, num.disturb, num.fert)
 
     ## DISCING & TILLAGE
-    tec$SOIL_MANAGEMENT$P_nbjres$value  <- num.disturb # number of residue incorporation events
-    tec$SOIL_MANAGEMENT$P_nbjtrav$value <- num.disturb # number of tillage events
+    tec$SOIL_MANAGEMENT$nbjres$value  <- num.disturb # number of residue incorporation events
+    tec$SOIL_MANAGEMENT$nbjtrav$value <- num.disturb # number of tillage events
 
     if(num.disturb != 0) {
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$julres     <- disturb.doys[real.disturb]
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$coderes    <- rep(1, num.disturb)
-      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Nminres  <- rep(0, num.disturb)
-      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_eaures   <- rep(0, num.disturb)
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Nminres  <- rep(0, num.disturb)
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$eaures   <- rep(0, num.disturb)
 
       if(crop == "wheat-durum") {
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_qres     <- rep(1,  num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Crespc   <- rep(42, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_CsurNres <- rep(15, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- rep(1,  num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- rep(42, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- rep(15, num.disturb)
       } else if(crop == "rape") {
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_qres     <- rep(2,  num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Crespc   <- rep(42, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_CsurNres <- rep(60, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- rep(2,  num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- rep(42, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- rep(60, num.disturb)
       } else if(crop == "protein pea") {
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_qres     <- rep(2,  num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Crespc   <- rep(20, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_CsurNres <- rep(70, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- rep(2,  num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- rep(20, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- rep(70, num.disturb)
       } else if(crop == "barley") {
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_qres     <- rep(5,  num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_Crespc   <- rep(50, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$P_CsurNres <- rep(15, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- rep(5,  num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- rep(50, num.disturb)
+        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- rep(15, num.disturb)
       } else {
         stop(paste0("crop ", crop, " not supported"))
       }

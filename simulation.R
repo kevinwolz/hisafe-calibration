@@ -8,7 +8,20 @@ A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
 #common.params <- list()
-common.params <- winner.common.params
+winner.common.params <- list(lueMax = 0.62,
+                             waterStressResponsiveness = 1.63,
+                             rsNoStressResponsiveness = 0.92,
+                             maxTargetLfrRatioDailyVariation = 0.003,
+                             targetLfrRatioUpperDrift = 0.31,
+                             cRAreaToFRLengthRatio = 8.00E-08,
+                             fineRootAnoxiaLifespan = 120,
+                             colonisationThreshold = 400,
+                             horizontalPreference = 0.63,
+                             maxDailyNSC = 0.14,
+                             targetNSCFraction = 0.21,
+                             transpirationCoefficient = 1.13)
+
+common.params <- c(winner.common.params, list(cropRootObstruction = 1.5))
 
 ## DEFINE
 A2.hip <- define_hisafe(path           = PATH,
@@ -49,8 +62,8 @@ castries.hip <- define_hisafe(path             = PATH,
                               profiles         = PROFILES,
                               template         = "castries_agroforestry",
                               SimulationName   = "Castries",
-                              mainCropSpecies  = "durum-wheat-allur-restinclieres.plt",
-                              interCropSpecies = "durum-wheat-allur-restinclieres.plt",
+                              mainCropSpecies  = "durum-wheat-restinclieres.plt",
+                              interCropSpecies = "durum-wheat-restinclieres.plt",
                               mainCropItk      = "durum-wheat-restinclieres.tec",
                               interCropItk     = "durum-wheat-restinclieres.tec",
                               bulk.pass        = common.params,
@@ -67,11 +80,12 @@ if(BUILD.SIMU) {
 }
 
 if(CLUSTER) {
-  build_cluster_script(simu.names   = ALL.SIMULATIONS,
-                       hip          = NULL,
-                       script.path  = PATH,
-                       cluster.path = paste0("/lustre/lecomtei/calibration/", NAME, "/"),
-                       email        = "wolzkevin@gmail.com")
+  build_cluster_script(simu.names    = ALL.SIMULATIONS,
+                       hip           = NULL,
+                       script.path   = PATH,
+                       cluster.path  = paste0("/lustre/lecomtei/calibration/", NAME, "/"),
+                       model.version = MODEL.VERSION,
+                       email         = "wolzkevin@gmail.com")
 }
 
 ## RUN
