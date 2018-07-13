@@ -7,35 +7,42 @@ A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2018.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
-#common.params <- list()
-winner.common.params <- list(lueMax = 0.62,
-                             waterStressResponsiveness = 1.63,
-                             rsNoStressResponsiveness = 0.92,
-                             maxTargetLfrRatioDailyVariation = 0.003,
-                             targetLfrRatioUpperDrift = 0.31,
-                             cRAreaToFRLengthRatio = 8.00E-08,
-                             fineRootAnoxiaLifespan = 120,
-                             colonisationThreshold = 400,
-                             horizontalPreference = 0.63,
-                             maxDailyNSC = 0.14,
-                             targetNSCFraction = 0.21,
-                             transpirationCoefficient = 1.13)
+#tree.params <- list()
+winner.tree.params <- list(lueMax = 0.62,
+                           rsWaterStressResponsiveness = 1.63,
+                           rsNoStressResponsiveness = 0.92,
+                           maxTargetLfrRatioDailyVariation = 0.003,
+                           targetLfrRatioUpperDrift = 0.31,
+                           cRAreaToFRLengthRatio = 8.00E-08,
+                           fineRootAnoxiaLifespan = 120,
+                           colonisationThreshold = 400,
+                           horizontalPreference = 0.63,
+                           transpirationCoefficient = 1.13)
 
-common.params <- c(winner.common.params, list(cropRootObstruction = 1.5))
+tree.params <- winner.tree.params
+#tree.params <- c(tree.params, list(stemFlowMax = 0))
+crop.params <- list()
+
+# rotation <- rep("durum-wheat-restinclieres.plt", 24)
+# rotation[c(4,7,12)] <- "rape.plt"
+# rotation[c(16,19,22)] <- "winter-pea.plt"
+# rotation[c(1,2,3,5,6,9)] <- "durum-wheat-NEFER.plt"
+# rotation[8] <- "durum-wheat-ORJAUNE.plt"
+# crop.params <- list(mainCropSpecies = list(rotation))
 
 ## DEFINE
 A2.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry_A2",
                         SimulationName = "Restinclieres-A2",
-                        bulk.pass      = common.params,
+                        bulk.pass      = c(tree.params, crop.params),
                         weatherFile    = A2.WEATHER)
 
 A3.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_agroforestry_A3",
                         SimulationName = "Restinclieres-A3",
-                        bulk.pass      = common.params,
+                        bulk.pass      = c(tree.params, crop.params),
                         weatherFile    = A3.WEATHER)
 
 
@@ -43,30 +50,32 @@ A4.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,
                         template       = "restinclieres_forestry_A4",
                         SimulationName = "Restinclieres-A4",
-                        bulk.pass      = common.params,
+                        bulk.pass      = tree.params,
                         weatherFile    = A4.WEATHER)
 
 A2.CC.hip <- define_hisafe(path           = PATH,
-                           profiles       = PROFILES,
+                           profiles       = PROFILES[!str_detect(PROFILES, "trees")],
                            template       = "restinclieres_monocrop_A2",
                            SimulationName = "Monocrop-A2",
+                           bulk.pass      = crop.params,
                            weatherFile    = A2.WEATHER)
 
 A3.CC.hip <- define_hisafe(path           = PATH,
-                           profiles       = PROFILES,
+                           profiles       = PROFILES[!str_detect(PROFILES, "trees")],
                            template       = "restinclieres_monocrop_A3",
                            SimulationName = "Monocrop-A3",
+                           bulk.pass      = crop.params,
                            weatherFile    = A3.WEATHER)
 
 castries.hip <- define_hisafe(path             = PATH,
                               profiles         = PROFILES,
                               template         = "castries_agroforestry",
                               SimulationName   = "Castries",
-                              mainCropSpecies  = "durum-wheat-restinclieres.plt",
-                              interCropSpecies = "durum-wheat-restinclieres.plt",
-                              mainCropItk      = "durum-wheat-restinclieres.tec",
-                              interCropItk     = "durum-wheat-restinclieres.tec",
-                              bulk.pass        = common.params,
+                              mainCropSpecies  = "fescue.plt",
+                              interCropSpecies = "fescue.plt",
+                              mainCropItk      = "fescue.tec",
+                              interCropItk     = "fescue.tec",
+                              bulk.pass        = tree.params,
                               weatherFile      = CASTRIES.WEATHER)
 
 ## BUILD

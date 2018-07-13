@@ -2,7 +2,7 @@
 ### TREES
 ### Author: Kevin J. Wolz
 
-for(STEP in c("calibration", "validation")) {
+for(STEP in STEPS) {
 
   if(STEP == "calibration") {
     SIMS <- CALIBRATION.SIMULATIONS
@@ -22,14 +22,16 @@ for(STEP in c("calibration", "validation")) {
   modeled.trees <- hop$trees %>%
     filter(SimulationName %in% SIMS) %>%
     mutate(SimulationName        = as.character(factor(SimulationName, levels = SIMS, labels = NEW.SIM.NAMES))) %>%
-    filter(id == 1) %>%
+    filter(idTree == 1) %>%
     filter(Date >= lubridate::ymd(DATE.MIN)) %>%
     rename(plot                  = SimulationName) %>%
     rename(date                  = Date) %>%
     rename(modeled.dbh           = dbh) %>%
     mutate(modeled.pruned.height = crownBaseHeight) %>%
     mutate(modeled.height        = height) %>%
-    select(plot, date, Year, Month, Day, modeled.dbh, modeled.height, modeled.pruned.height)
+    mutate(modeled.crown.radius.interrow = crownRadiusInterRow) %>%
+    mutate(modeled.crown.radius.treeline = crownRadiusTreeLine) %>%
+    select(plot, date, Year, Month, Day, modeled.dbh, modeled.height, modeled.pruned.height, modeled.crown.radius.interrow, modeled.crown.radius.treeline)
 
   modeled.annual <- modeled.trees %>%
     rename(year = Year) %>%
@@ -47,7 +49,7 @@ for(STEP in c("calibration", "validation")) {
 
   ##### MEASURED vs. MODELED TIMESERIES #####
   vars <- c("dbh", "pruned.height", "height")
-  labs <- c("DBH", "Pruned height", "Tree height")
+  labs <- c("DBH (cm)", "Pruned height (m)", "Tree height (m)")
 
   for(i in vars){
     plot.annotation <- data.frame(plot = NEW.SIM.NAMES)
@@ -57,9 +59,10 @@ for(STEP in c("calibration", "validation")) {
     ts.plot <- ggplot(plot.measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
       labs(x       = "Year",
            caption = "Measured: Boxplots\nModeled: Line",
-           y       = paste(labs[match(i, vars)], "(cm)")) +
+           y       = labs[match(i, vars)]) +
       facet_wrap(~plot) +
       geom_boxplot(aes(group = date), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
+      stat_summary(fun.y = mean, color = "grey30", geom = "point", size = 1, na.rm = TRUE) +
       scale_x_date(date_breaks = "5 years", date_labels = "%Y") + # seq(lubridate::ymd("1995-01-01"), lubridate::ymd("2015-01-01"), "5 years")
       scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
       geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 0.75) +
@@ -74,7 +77,7 @@ for(STEP in c("calibration", "validation")) {
 
   ##### MEASURED vs. MODELED INCREMENT SCATTERPLOT #####
   vars <- c("dbh.inc", "height.inc")
-  labs <- c("DBH increment", "Height increment")
+  labs <- c("DBH increment (cm)", "Height increment (cm)")
 
   for(i in vars){
     if(i == "dbh.inc") LIMITS <- c(0, 3) else LIMITS <- c(0, 150)
@@ -85,14 +88,14 @@ for(STEP in c("calibration", "validation")) {
     # plot.annotation[[paste0("modeled.",  i)]] <- LIMITS[1]
     # plot.annotation[[paste0("measured.", i)]] <- LIMITS[2]
 
-    annual$ub <- annual[[paste0("measured.", i)]] + annual[[paste0("measured.", i, ".sd")]]
-    annual$lb <- annual[[paste0("measured.", i)]] - annual[[paste0("measured.", i, ".sd")]]
+    #annual$ub <- annual[[paste0("measured.", i)]] + annual[[paste0("measured.", i, ".sd")]]
+    #annual$lb <- annual[[paste0("measured.", i)]] - annual[[paste0("measured.", i, ".sd")]]
 
     mvm.inc.plot <- ggplot(annual, aes_string(x = paste0("modeled.", i), y = paste0("measured.", i))) +
-      labs(x    = paste("Modeled", labs[match(i, vars)], "(cm)"),
+      labs(x    = paste("Modeled", labs[match(i, vars)]),
            caption = mvm,
            fill = NULL,
-           y    = paste("Measured", labs[match(i, vars)], "(cm)")) +
+           y    = paste("Measured", labs[match(i, vars)])) +
       geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
       # geom_errorbar(aes(ymin = lb,
       #                   ymax = ub),
@@ -113,21 +116,21 @@ for(STEP in c("calibration", "validation")) {
 
   ##### MEASURED vs. MODELED INCREMENT TIMESERIES #####
   vars <- c("dbh.inc", "height.inc")
-  labs <- c("DBH increment", "tree height increment")
+  labs <- c("DBH increment (cm)", "tree height increment (cm)")
 
   for(i in vars){
     plot.annotation <- data.frame(plot = NEW.SIM.NAMES)
     plot.annotation$year <- min(annual$year, na.rm = TRUE)
     plot.annotation[[paste0("measured.", i)]] <- max(annual[[paste0("measured.", i)]], na.rm = TRUE)
 
-    annual$ub <- annual[[paste0("measured.", i)]] + annual[[paste0("measured.", i, ".sd")]]
-    annual$lb <- annual[[paste0("measured.", i)]] - annual[[paste0("measured.", i, ".sd")]]
+    #annual$ub <- annual[[paste0("measured.", i)]] + annual[[paste0("measured.", i, ".sd")]]
+    #annual$lb <- annual[[paste0("measured.", i)]] - annual[[paste0("measured.", i, ".sd")]]
 
     ts.inc.plot <- ggplot(annual, aes(x = year)) +
       labs(x = "Year",
            #title = "Hi-sAFe Calibration",
            caption = "Measured: Points\nModeled: Line",
-           y = paste(labs[match(i, vars)], "(cm)")) +
+           y = labs[match(i, vars)]) +
       facet_wrap(~plot) +
       geom_point(aes_string(y = paste0("measured.", i)), na.rm = TRUE, color = "grey50") +
       geom_line(aes_string(y  = paste0("modeled.", i)),  na.rm = TRUE) +

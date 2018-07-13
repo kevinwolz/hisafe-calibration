@@ -7,7 +7,7 @@ management    <- readr::read_csv("./raw_data/restinclieres_weed_management.csv",
 fertilization <- readr::read_csv("./raw_data/restinclieres_crop_fertilization.csv", col_types = readr::cols()) # USE SAME FERTILIZATION AS MAIN CROP
 NEW.TECS <- data.frame(year = 1994:2017, file.name = paste0("W", 1994:2017, "-", 1995:2018, ".tec"))
 
-get_original_tec <- function(x, num.disturb, num.fert) {
+get_original_tec <- function(x, num.disturb, num.weeds, num.fert) {
   num.disturb <- max(num.disturb, 1)
   num.fert <- max(num.fert, 1)
 
@@ -22,18 +22,18 @@ get_original_tec <- function(x, num.disturb, num.fert) {
   tec <- read_param_file(paste0(path, original.tec.file))
 
   ## INITIALIZE TABLES
-  tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value <- list(data.frame(julres     = rep("NA", num.disturb),
-                                                                                  coderes    = rep("NA", num.disturb),
-                                                                                  qres     = rep("NA", num.disturb),
-                                                                                  Crespc   = rep("NA", num.disturb),
-                                                                                  CsurNres = rep("NA", num.disturb),
-                                                                                  Nminres  = rep("NA", num.disturb),
-                                                                                  eaures   = rep("NA", num.disturb)))
+  tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value <- list(data.frame(julres   = rep("NA", num.weeds),
+                                                                                       coderes  = rep("NA", num.weeds),
+                                                                                       qres     = rep("NA", num.weeds),
+                                                                                       Crespc   = rep("NA", num.weeds),
+                                                                                       CsurNres = rep("NA", num.weeds),
+                                                                                       Nminres  = rep("NA", num.weeds),
+                                                                                       eaures   = rep("NA", num.weeds)))
   tec$TILLAGE_TABLE$tillage.table$value <- list(data.frame(jultrav  = rep("NA", num.disturb),
-                                                      profres  = rep("NA", num.disturb),
-                                                      proftrav = rep("NA", num.disturb)))
+                                                           profres  = rep("NA", num.disturb),
+                                                           proftrav = rep("NA", num.disturb)))
   tec$FERTILIZATION_TABLE$fertilization.table$value <- list(data.frame(julapN  = rep("NA", num.fert),
-                                                                  qte  = rep("NA", num.fert)))
+                                                                       qte  = rep("NA", num.fert)))
   tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$commented <- FALSE
   tec$TILLAGE_TABLE$tillage.table$commented <- FALSE
   tec$FERTILIZATION_TABLE$fertilization.table$commented <- FALSE
@@ -56,35 +56,32 @@ for(path in paths) {
     real.disturb  <- !is.na(disturb.doys)
     num.disturb   <- sum(real.disturb)
     num.fert      <- length(fert$crop.doy)
+    num.weeds     <- 0
 
-    tec <- get_original_tec(crop, num.disturb, num.fert)
+    tec <- get_original_tec(crop, num.disturb, num.weeds, num.fert)
 
     ## DISCING & TILLAGE
-    tec$SOIL_MANAGEMENT$nbjres$value  <- num.disturb # number of residue incorporation events
     tec$SOIL_MANAGEMENT$nbjtrav$value <- num.disturb # number of tillage events
-
     if(num.disturb != 0) {
-      if(crop == "weed") {
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$julres   <- disturb.doys[real.disturb]
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$coderes  <- rep(1, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- rep(1,  num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- rep(42, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- rep(15, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Nminres  <- rep(0, num.disturb)
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$eaures   <- rep(0, num.disturb)
-      } else if(crop == "baresoil") {
-        tec$SOIL_MANAGEMENT$nbjres$value                          <- 0
-        tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table <- NULL
-      } else {
-        stop(paste0("crop ", crop, " not supported"))
-      }
-
       tec$TILLAGE_TABLE$tillage.table$value[[1]]$jultrav  <- disturb.doys[real.disturb]
       tec$TILLAGE_TABLE$tillage.table$value[[1]]$profres  <- disturb.depth[real.disturb]
       tec$TILLAGE_TABLE$tillage.table$value[[1]]$proftrav <- disturb.depth[real.disturb]
     } else {
+      tec$TILLAGE_TABLE$tillage.table <- NULL
+    }
+
+    ## WEED RESIDUE
+    tec$SOIL_MANAGEMENT$nbjres$value  <- num.weeds # number of residue incorporation events
+    if(num.weeds != 0) {
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$julres   <- manage$tillage.doy
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$coderes  <- 1
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- manage$tillage.weeds
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- 50
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- 25
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Nminres  <- 0
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$eaures   <- 0
+    } else {
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table <- NULL
-      tec$TILLAGE_TABLE$tillage.table                             <- NULL
     }
 
     ## SOWING

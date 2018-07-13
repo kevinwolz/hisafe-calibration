@@ -2,18 +2,19 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20180623"
+NAME <- "calibration_20180712-3"
 MODEL.VERSION <- "Capsis4"
 
 BUILD.SIMU <- TRUE
 RUN.SIMU   <- FALSE
 CLUSTER    <- TRUE
-PROFILES   <- c("annualCells", "plot", "trees", "climate", "monthCells", "cells")#, "voxels")
+PROFILES   <- c("plot", "trees", "cells", "cellsDetail", "annualCells", "treesDetail", "climate", "monthCells")#, "plotDetail", "monthCellsDetail")#, "voxels")
 cbPalette  <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-ALL.SIMULATIONS         <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4", "Monocrop-A2", "Monocrop-A3", "Castries")
+ALL.SIMULATIONS         <- c("Monocrop-A2", "Monocrop-A3", "Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")#, "Castries")
 CALIBRATION.SIMULATIONS <- c("Restinclieres-A2", "Restinclieres-A3", "Restinclieres-A4")
 VALIDATION.SIMULATIONS  <- c("Castries")
+STEPS <- c("calibration")#, "validation")
 
 ## REQUIRED LIBRARIES
 library(hisafer)
@@ -22,7 +23,6 @@ library(lubridate)
 library(viridis)
 library(grid)
 library(ggalt)
-library(DeLuciatoR)
 
 ## PATHS
 input.path      <- "./raw_data/"
@@ -37,4 +37,5 @@ source("read_simulation.R")
 source("field_data.R")
 source("trees_calibration.R")
 source("crops_calibration.R")
+source("misc_calibration.R")
 source("diagnostics.R")

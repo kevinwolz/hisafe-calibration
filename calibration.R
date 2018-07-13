@@ -2,8 +2,8 @@
 ### CALIBRATION
 ### Author: Kevin J. Wolz
 
-REGENERATE.LHS <- FALSE
-N.SIMUS <- 1000
+REGENERATE.LHS <- TRUE
+N.SIMUS <- 10000
 
 library(hisafer)
 library(tidyverse)
@@ -18,6 +18,7 @@ cbPalette  <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"
 input.path      <- "./raw_data/"
 simulation.path <- "./simulations/"
 lhs.output.path <- "./output/LHS/"
+dir.create(lhs.output.path, showWarnings = FALSE, recursive = TRUE)
 
 PARAMS <- read_csv(paste0(input.path, "hisafe_calibration_parameters.csv"), col_types = cols()) %>%
   filter(calibrate == TRUE)
@@ -40,8 +41,8 @@ A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2018.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 
 ##### GENERATE LATIN HYPRECUBE SAMPLE SET #####
-old.top.sims <- read_csv(paste0("./output/LHS_Top_Sims.csv"), col_types = cols()) %>%
-  mutate(id = (N.SIMUS + 1):(N.SIMUS + nrow(.)))
+# old.top.sims <- read_csv(paste0("./output/LHS_Top_Sims.csv"), col_types = cols()) %>%
+#   mutate(id = (N.SIMUS + 1):(N.SIMUS + nrow(.)))
 
 if(REGENERATE.LHS) {
   # calib.sample <- lat.hyp.samp <- geneticLHS(n         = N.SIMUS,
@@ -60,12 +61,12 @@ if(REGENERATE.LHS) {
   calib.sample <- calib.sample %>%
     round_vals() %>%
     mutate(id = 1:nrow(.)) %>%
-    select(id, everything()) %>%
-    bind_rows(old.top.sims)
+    select(id, everything()) #%>%
+  #bind_rows(old.top.sims)
   write_csv(calib.sample, paste0(lhs.output.path, "hisafe_calibration_LHS.csv"))
 } else {
-  calib.sample <- read_csv(paste0(lhs.output.path, "hisafe_calibration_LHS.csv"), col_types = cols()) %>%
-    bind_rows(old.top.sims)
+  calib.sample <- read_csv(paste0(lhs.output.path, "hisafe_calibration_LHS.csv"), col_types = cols()) #%>%
+  #bind_rows(old.top.sims)
 }
 
 ##### BULID DEFAULT FOLDERS #####
@@ -77,8 +78,11 @@ build_hisafe(hip           = A3.template,
              files         = c("tec", "plt", "pro", "par", "pld", "wth"),
              plot.scene    = FALSE,
              summary.files = FALSE)
-dum <- file.copy(from = "/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe-calibration/raw_data/A3_horizontal_root_data.cal",
-                 to   = paste0(simulation.path, "LHS_default_folders/A3/A3_horizontal_root_data.cal"))
+dum <- file.copy(from = paste0(input.path, "A3.rootcal"),
+                 to   = paste0(simulation.path, "LHS_default_folders/A3/A3.rootcal"))
+dum <- file.copy(from = paste0(input.path, "A3.dbhcal"),
+                 to   = paste0(simulation.path, "LHS_default_folders/A3/A3.dbhcal"))
+
 
 A2.template <- define_hisafe(path     = paste0(simulation.path, "LHS_default_folders"),
                              template = "restinclieres_agroforestry_A2",
@@ -126,22 +130,27 @@ build_cluster_script(hip            = A3.hip,
                      email          = "wolzkevin@gmail.com")
 
 ##### DETERMINE WHICH A3 SIMULATIONS WERE ABORTED AND WHY #####
-abort.files <- list.files(paste0(PATH, "/LHS_A3"), pattern = "abort\\.txt", full.names = TRUE, recursive = TRUE)
-abort <- purrr::map(abort.files,
-                    read_delim,
-                    delim     = ";",
-                    col_names = c("SimulationName", "year", "month", "day", "dist.4m", "dist.6m", "full.scene", "dist"),
-                    col_types = cols()) %>%
-  bind_rows() %>%
-  mutate(event = paste0(year, "-", month)) %>%
-  mutate(id    = as.numeric(str_remove(SimulationName, "LHS_A[2-4]_"))) %>%
-  left_join(calib.sample,  by = "id")
+root.abort.files <- list.files(paste0(PATH, "/LHS_A3"), pattern = "root\\.abort", full.names = TRUE, recursive = TRUE)
+dbh.abort.files  <- list.files(paste0(PATH, "/LHS_A3"), pattern = "dbh\\.abort",  full.names = TRUE, recursive = TRUE)
+root.abort <- purrr::map_df(root.abort.files,
+                            read_delim,
+                            delim     = ";",
+                            col_names = c("abort", "value", "SimulationName", "year", "month", "day", "idTree", "dist.4m", "dist.6m", "full.scene"),
+                            col_types = cols())
+dbh.abort <- purrr::map_df(dbh.abort.files,
+                           read_delim,
+                           delim     = ";",
+                           col_names = c("abort", "value", "SimulationName", "year", "month", "day", "idTree", "dbh.min", "dbh.max"),
+                           col_types = cols())
 
-# table(abort$dist)
+abort <- root.abort %>%
+  bind_rows(dbh.abort) %>%
+  select(abort:day) %>%
+  mutate(event = paste(year, month, abort, sep = "-")) %>%
+  mutate(id    = as.numeric(str_remove(SimulationName, "LHS_A3_"))) %>%
+  left_join(calib.sample, by = "id")
 
-aborted.ids <- abort$SimulationName %>%
-  str_remove("LHS_A3_") %>%
-  as.numeric()
+aborted.ids     <- abort$id
 non.aborted.ids <- calib.sample$id[!(calib.sample$id %in% aborted.ids)]
 
 ## FAILURE DIAGNOSTICS

@@ -2,18 +2,19 @@
 ### BUILD WATER TABLE
 ### Author: Kevin J. Wolz
 
-OPTIMIZE <- FALSE
+OPTIMIZE <- TRUE
 
-PLOTS       <- paste0("A", 2:4)
+PLOTS       <- paste0("A", 3:4)
 LATITUDE    <- 43.7
 PARAM.NAMES <- c("init", "a", "b", "l", "m", "n", "ru", "prof_nappe_max")
 LB          <- c(-500, 1e-6, 2, 10,  1,  0.1, 100, 300)
 UB          <- c(-100, 1e-4, 3, 150, 10, 1,   300, 700)
-N.ITER      <- 1000
+N.ITER      <- 500
 N.POP       <- 100
 
 input.path <- "./raw_data/"
 wt.path    <- "./output/water_table/"
+dir.create(wt.path, showWarnings = FALSE)
 
 library(hisafer)
 library(tidyverse)
@@ -24,10 +25,31 @@ source("water_table_functions.R")
 
 ##### BASE RESTINCLIERES WEATHER #####
 ## Data sources:
-## Restinclieres Chatau/Plots: temp, humidity, rain, wind
-## Lavalette: radiation
-## Fixed: CO2
-## File name appendix refers to when the data was last updated
+# Rain:
+# - data from our stations (campbell and hobo)
+# - missing data from the castle data until 2004, Lavalette then.
+#
+# Temperatures:
+# - data from our stations (campbell then hobo)
+# - for missing data, use of campbell-lavalette regression lines then hobo-lavalette to modify Lavalette's data
+# - for more details, see the files Temp_comp_campbell-frejrgues-lavalette_initial.xls and Temp_comp_hobo-frejrgues-lavalette_final.xls
+#
+# RG:
+# - data taken from Mauguio Airport. The missing data are completed by those of Lavalette.
+# - (note: no missing data before 2001, that's good because the Lavalette data before 1999 are bad).
+#
+# Wind:
+# - Lavalette data
+# - a single missing datum interpolated between the previous day and the next day
+#
+# Humidity:
+# - Castle data until 30/04/2008, supplemented by Lavalette for missing data
+# - Lavalette data next
+#
+# CO2:
+# - Fixed
+#
+# File name appendix refers to when the data was last updated
 last.updated <- "20180416"
 base.wth <- read_csv(paste0(input.path, "restinclieres_weather_base-1994-2018_", last.updated, ".csv"),
                      guess_max = 10000,
@@ -38,11 +60,12 @@ base.wth <- read_csv(paste0(input.path, "restinclieres_weather_base-1994-2018_",
 
 ## Clean up obvious errors
 # ggplot(base.wth, aes(x = JULIAN, y = RG)) + geom_line() + facet_wrap(~YR)
-base.wth$Rg[base.wth$year == 1996 & base.wth$month == 12 & base.wth$day == 3]  <- 5
-base.wth$Rg[base.wth$year == 2008 & base.wth$month == 3  & base.wth$day == 31] <- 5
-base.wth$Rg[base.wth$year == 2008 & base.wth$month == 4  & base.wth$day == 4]  <- 5
-base.wth$Rg[base.wth$year == 2015 & base.wth$month == 9  & base.wth$day == 11] <- 5
-base.wth$Rg[base.wth$year == 2007 & base.wth$Rg > 35] <- 30
+base.wth$Rg[base.wth$year == 2010 & base.wth$month == 12 & base.wth$day == 19]  <- 5
+#base.wth$Rg[base.wth$year == 1996 & base.wth$month == 12 & base.wth$day == 3]  <- 5
+#base.wth$Rg[base.wth$year == 2008 & base.wth$month == 3  & base.wth$day == 31] <- 5
+#base.wth$Rg[base.wth$year == 2008 & base.wth$month == 4  & base.wth$day == 4]  <- 5
+#base.wth$Rg[base.wth$year == 2015 & base.wth$month == 9  & base.wth$day == 11] <- 5
+#base.wth$Rg[base.wth$year == 2007 & base.wth$Rg > 35] <- 30
 
 ##### PIEZOMETER DATA #####
 piezo.info <- read_csv("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe-calibration/raw_data/restinclieres_piezometer_info.csv",

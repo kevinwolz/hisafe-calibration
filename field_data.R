@@ -351,6 +351,11 @@ for(y in c(2000)) { # 2017
 }
 
 ##### PREP MEASURED DATA FOR CALIBRATION/VALIDATION #####
+## For calibration, use the MEAN measured value of all trees rather than the MEDIAN.
+## They are both extremely similar, except for a few times when MEDIAN has weird jumps/dips.
+## To calculate INCREMENTS, take the DIFFERENCE OF THE MEANS, rather than the MEAN OF THE DIFFERENCES.
+## This makes the measured vs. modeled look so much better!
+
 cal.measured.trees <- measured.trees %>%
   filter(plot %in% CALIBRATION.SIMULATIONS) %>%
   mutate(plot = as.character(factor(plot, levels = paste0("Restinclieres-A", 2:4), labels = paste0("A", 2:4))))
@@ -358,12 +363,14 @@ cal.measured.trees <- measured.trees %>%
 cal.measured.annual <- cal.measured.trees %>%
   group_by(plot, year) %>%
   summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
-            measured.dbh.inc.sd    = sd(measured.dbh.inc,         na.rm = TRUE),
-            measured.dbh.inc       = mean(measured.dbh.inc,       na.rm = TRUE),
+            measured.dbh.inc.MD    = mean(measured.dbh.inc,       na.rm = TRUE),
+            #measured.dbh.inc.sd    = sd(measured.dbh.inc,           na.rm = TRUE),
             measured.height        = mean(measured.height,        na.rm = TRUE),
-            measured.height.inc.sd = sd(measured.height.inc,      na.rm = TRUE),
-            measured.height.inc    = mean(measured.height.inc,    na.rm = TRUE),
+            #measured.height.inc.sd = sd(measured.height.inc,        na.rm = TRUE),
             measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
+  mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),#mean(measured.dbh.inc,       na.rm = TRUE),
+         measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc,    na.rm = TRUE),
+  mutate(measured.dbh.inc = measured.dbh.inc.DM) %>%
   ungroup()
 
 cal.measured.annual[is.na(cal.measured.annual)] <- NA
@@ -374,22 +381,27 @@ val.measured.trees <- measured.trees %>%
 val.measured.annual <- val.measured.trees %>%
   group_by(plot, year) %>%
   summarize(measured.dbh           = mean(measured.dbh,           na.rm = TRUE),
-            measured.dbh.inc.sd    = sd(measured.dbh.inc,         na.rm = TRUE),
-            measured.dbh.inc       = mean(measured.dbh.inc,       na.rm = TRUE),
+            measured.dbh.inc.MD    = mean(measured.dbh.inc,       na.rm = TRUE),
+            #measured.dbh.inc.sd    = sd(measured.dbh.inc,           na.rm = TRUE),
             measured.height        = mean(measured.height,        na.rm = TRUE),
-            measured.height.inc.sd = sd(measured.height.inc,      na.rm = TRUE),
-            measured.height.inc    = mean(measured.height.inc,    na.rm = TRUE),
+            #measured.height.inc.sd = sd(measured.height.inc,        na.rm = TRUE),
             measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
+  mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),#mean(measured.dbh.inc,       na.rm = TRUE),
+         measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc,    na.rm = TRUE),
+  mutate(measured.dbh.inc = measured.dbh.inc.DM) %>%
   ungroup()
 
 val.measured.annual[is.na(val.measured.annual)] <- NA
 
 ##### MEASURED CROP YIELD #####
 ## raw units are hundredweight/ha
+CALIBRATION.CROPS <- "durum wheat"#c("durum wheat", "protein pea")
 measured.yield.raw <- as.tibble(read.csv(paste0(input.path, "restinclieres_crop_yield.csv"), stringsAsFactors = FALSE))
 measured.yield <- measured.yield.raw %>%
-  filter(crop == "durum wheat") %>%
-  mutate(year = as.numeric(year)) %>%
+  filter(crop %in% CALIBRATION.CROPS) %>%
+  filter(year > 2000) %>% # don't have year-specific management data before this, even though have year-specific yield data
+  filter(year > 2003) %>% # wheat varieties that are not Claudio and for which we don't have solid parameterization
+  filter(!(year %in% c(2002, 2007))) %>% # these are the 2 wheat years directly after rape. Yields are abnormally high, likely due to some biotic interaction with rape that is not adequately represented in STICS. We don't have any data on rape biomass/yield to compare with the model output.
   mutate(measured.yield    = measured.yield    / 10,
          measured.yield.sd = measured.yield.sd / 10) %>%
   select(plot, year, crop, location, everything(), -System)
