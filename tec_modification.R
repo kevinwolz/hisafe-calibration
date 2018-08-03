@@ -81,7 +81,7 @@ for(path in paths) {
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$coderes  <- 1
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- manage$tillage.weeds
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- 50
-      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- 25
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- 100
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Nminres  <- 0
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$eaures   <- 0
     } else {

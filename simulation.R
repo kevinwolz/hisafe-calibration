@@ -7,19 +7,20 @@ A3.WEATHER <- "./raw_data/restinclieres_A3-1994-2018.wth"
 A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
-#tree.params <- list()
-winner.tree.params <- list(lueMax = 0.62,
-                           rsWaterStressResponsiveness = 1.63,
-                           rsNoStressResponsiveness = 0.92,
-                           maxTargetLfrRatioDailyVariation = 0.003,
-                           targetLfrRatioUpperDrift = 0.31,
-                           cRAreaToFRLengthRatio = 8.00E-08,
-                           fineRootAnoxiaLifespan = 120,
-                           colonisationThreshold = 400,
-                           horizontalPreference = 0.63,
-                           transpirationCoefficient = 1.13)
+tree.params <- list()
+winner.tree.params <- list()#winner.common.params
+# list(lueMax = 0.62,
+#                            rsWaterStressResponsiveness = 1.63,
+#                            rsNoStressResponsiveness = 0.92,
+#                            maxTargetLfrRatioDailyVariation = 0.003,
+#                            targetLfrRatioUpperDrift = 0.31,
+#                            cRAreaToFRLengthRatio = 8.00E-08,
+#                            fineRootAnoxiaLifespan = 120,
+#                            colonisationThreshold = 400,
+#                            horizontalPreference = 0.63,
+#                            transpirationCoefficient = 1.13)
 
-tree.params <- winner.tree.params
+tree.params <- c(tree.params, winner.tree.params)
 #tree.params <- c(tree.params, list(stemFlowMax = 0))
 crop.params <- list()
 
@@ -44,7 +45,6 @@ A3.hip <- define_hisafe(path           = PATH,
                         SimulationName = "Restinclieres-A3",
                         bulk.pass      = c(tree.params, crop.params),
                         weatherFile    = A3.WEATHER)
-
 
 A4.hip <- define_hisafe(path           = PATH,
                         profiles       = PROFILES,

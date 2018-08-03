@@ -4,9 +4,9 @@
 
 ## REFERENCE CELLS
 # Restinclieres-A2 (13x8, with two trees)
-A2.NORTH  <- c(69,70) # LHS of Scene
+A2.NORTH  <- c(70,70) #c(69,70) # LHS of Scene
 A2.MIDDLE <- c(66,78)
-A2.SOUTH  <- c(74,75) # RHS of Scene
+A2.SOUTH  <- c(74,74)#c(74,75) # RHS of Scene
 
 # Restinclieres-A3 (13x8, with two trees)
 A3.EAST   <- c(69,70) # LHS of Scene
@@ -16,7 +16,8 @@ A3.WEST   <- c(74,75) # RHS of Scene
 CELL.IDS  <- c(A2.NORTH, A2.MIDDLE, A2.SOUTH, A3.EAST, A3.MIDDLE, A3.WEST)
 REF.CELLS <- tibble(plot     = c(rep(c("Restinclieres-A2", "Restinclieres-A3"), each = 6), "Monocrop-A2", "Monocrop-A3"),
                     location = c(rep(c("North", "Middle", "South"), each = 2), rep(c("East", "Middle", "West"), each = 2), "Monocrop", "Monocrop"),
-                    idCell   = c(CELL.IDS, 1, 1))
+                    idCell   = c(CELL.IDS, 1, 1)) %>%
+  distinct()
 
 ## MODELED CROP YIELD (raw units tons ha-1)
 modeled.yield <- hop$annualCells %>%
@@ -38,7 +39,8 @@ modeled.yield$plot[modeled.yield$plot == "Monocrop-A3"] <- "Restinclieres-A3"
 yield <- modeled.yield %>%
   left_join(measured.yield, by = c("plot", "year", "location")) %>%
   mutate(comparable = as.numeric(year %in% c(2004, 2005, 2008, 2009, 2012)) + 1) %>%
-  mutate(group = purrr::map_chr(strsplit(plot, "-"),2))
+  mutate(group = purrr::map_chr(strsplit(plot, "-"),2)) %>%
+  filter(group == "A2")
 yield$comparable <- factor(yield$comparable, c("1", "2"), c("no", "yes"))
 
 yield$location[yield$location == "East"] <- "North"
@@ -93,7 +95,7 @@ rel.yield <- AF.yield %>%
 # ggsave_fitmax(paste0(PATH, "analysis/", FIELD.SITE, "_", gsub("\\.", "_", i), ".jpg"), crop.ts.plot)
 
 ## MEASURED vs. MODELED SCATTERPLOT
-LIMITS <- c(0, 7.5)
+LIMITS <- c(0, 6)
 # plot.annotation <- data.frame(group = paste0("A", 2:3))
 # plot.annotation$modeled.yield  <- LIMITS[1]
 # plot.annotation$measured.yield <- LIMITS[2]
@@ -103,20 +105,20 @@ crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
        y     = "Measured wheat yield (ton ha-1)",
        shape = "Zone",
        fill  = "Year",
-       color = NULL,
-       size  = "DW after DW") +
+       #size  = "DW after DW"
+       color = NULL) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   geom_errorbar(aes(ymin = measured.yield - measured.yield.sd,
                     ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
   #geom_point(aes(fill = year, shape = location, size = comparable, color = group), na.rm = TRUE) +
-  geom_point(aes(fill = year, shape = location, color = crop), na.rm = TRUE) +
+  geom_point(aes(fill = year, shape = location, color = crop), na.rm = TRUE, size = 2) +
   #geom_text(aes(label = year.label), size = 0.5) +
   facet_wrap(~plot) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_shape_manual(values = c(21, 22, 23, 24)) +
   scale_color_manual(values = c("black", "green")) +
-  scale_size_manual(values = c(2, 3)) +
+  #scale_size_manual(values = c(2, 3)) +
   scale_fill_viridis(option = "magma") +
   guides(color = FALSE) +
   annotate("text", x = LIMITS[2], y = LIMITS[1], label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
@@ -124,7 +126,7 @@ crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
                   strip.text       = element_blank(),
                   panel.grid       = element_blank())
 
-ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.7)
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.2)
 
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
@@ -185,4 +187,4 @@ rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel
                   strip.text       = element_blank(),
                   panel.grid       = element_blank())
 
-ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.7)
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield_relative.jpg"), rel.scatterplot, scale = 1.2)

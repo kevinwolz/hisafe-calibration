@@ -8,6 +8,7 @@ mean_radius <- function(a, b) {
   out[is.nan(out)] <- NA
   return(out)
 }
+reldiff <- function(x) diff(x) / x[-length(x)]
 
 ##### DEFINE EDGE TRIES #####
 paste_h <- function(...) paste(..., sep = "-")
@@ -82,16 +83,19 @@ restinclieres.trees <- restinclieres.trees %>%
 
 ## Remove individual tree-year points that are sharp jumps or negative growth
 bad.dbh    <-  read_csv(paste0(input.path, "Bad_Tree_DBH_data.csv"),    col_types = cols()) %>%
-  mutate(bad.check = paste0(plot, rowtree.id, year, sep = "-"))
+  mutate(bad.check = paste(plot, rowtree.id, year, sep = "-"))
 bad.height <-  read_csv(paste0(input.path, "Bad_Tree_Height_data.csv"), col_types = cols()) %>%
-  mutate(bad.check = paste0(plot, rowtree.id, year, sep = "-"))
+  mutate(bad.check = paste(plot, rowtree.id, year, sep = "-"))
 restinclieres.trees <- restinclieres.trees %>%
-  mutate(bad.check = paste0(plot, rowtree.id, year, sep = "-"))
+  mutate(bad.check = paste(plot, rowtree.id, year, sep = "-"))
 
-#restinclieres.trees$measured.dbh[restinclieres.trees$bad.check    %in% bad.dbh$bad.check]    <- NA
-#restinclieres.trees$measured.height[restinclieres.trees$bad.check %in% bad.height$bad.check] <- NA
+restinclieres.trees$measured.dbh[restinclieres.trees$bad.check    %in% bad.dbh$bad.check]    <- NA
+restinclieres.trees$measured.height[restinclieres.trees$bad.check %in% bad.height$bad.check] <- NA
 
 restinclieres.trees <- select(restinclieres.trees, -bad.check)
+
+## Remove 2017 tree height data - clearly measurement error!
+restinclieres.trees$measured.height[which(restinclieres.trees$year == 2017)] <- NA
 
 A2.LIVING.TREES <- restinclieres.trees %>%
   filter(plot == "Restinclieres-A2") %>%
@@ -195,8 +199,10 @@ measured.trees <- measured.trees.all %>%
   ## Calculate growth in DBH and height
   group_by(plot, rowtree.id) %>%
   arrange(plot, rowtree.id, date) %>%
-  mutate(measured.dbh.inc    = c(NA, diff(measured.dbh))) %>%
-  mutate(measured.height.inc = c(NA, diff(measured.height)) * 100) %>%
+  #mutate(measured.dbh.inc    = c(NA, diff(measured.dbh))) %>%           # Calculate ABSOLUE increase
+  #mutate(measured.height.inc = c(NA, diff(measured.height)) * 100) %>%  # Calculate ABSOLUE increase
+  mutate(measured.dbh.inc    = c(NA, reldiff(measured.dbh))) %>%    # Calculate RELATIVE increase
+  mutate(measured.height.inc = c(NA, reldiff(measured.height))) %>% # Calculate RELATIVE increase
   ungroup()
 
 ## Remove trees with negative growth in height or dbh
@@ -324,7 +330,7 @@ piezos <- read_csv(paste0(input.path, "restinclieres_piezometer_info.csv"), col_
   mutate(row.id  = as.numeric(str_replace_all(row.id, nums)))
 piezos$row.id[piezos$plot  == "Restinclieres-A3"] <- -1 * piezos$row.id[piezos$plot  == "Restinclieres-A3"]
 
-for(y in c(2000)) { # 2017
+for(y in c(2000, 2004)) { # 2017
   for(p in unique(map.data$plot)) {
     map.plot.data <- map.data %>%
       filter(plot == p) %>%
@@ -368,8 +374,10 @@ cal.measured.annual <- cal.measured.trees %>%
             measured.height        = mean(measured.height,        na.rm = TRUE),
             #measured.height.inc.sd = sd(measured.height.inc,        na.rm = TRUE),
             measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
-  mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),#mean(measured.dbh.inc,       na.rm = TRUE),
-         measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc,    na.rm = TRUE),
+  # mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),              #mean(measured.dbh.inc,    na.rm = TRUE), # ABSOLUTE DIFFERENCES
+  #        measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc, na.rm = TRUE), # ABSOLUTE DIFFERENCES
+  mutate(measured.dbh.inc.DM = c(NA, reldiff(measured.dbh)),              # RELATIVE DIFFERENCES
+         measured.height.inc = c(NA, reldiff(measured.height)) * 100) %>% # RELATIVE DIFFERENCES
   mutate(measured.dbh.inc = measured.dbh.inc.DM) %>%
   ungroup()
 
@@ -386,8 +394,10 @@ val.measured.annual <- val.measured.trees %>%
             measured.height        = mean(measured.height,        na.rm = TRUE),
             #measured.height.inc.sd = sd(measured.height.inc,        na.rm = TRUE),
             measured.pruned.height = mean(measured.pruned.height, na.rm = TRUE)) %>%
-  mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),#mean(measured.dbh.inc,       na.rm = TRUE),
-         measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc,    na.rm = TRUE),
+  # mutate(measured.dbh.inc.DM = c(NA, diff(measured.dbh)),              #mean(measured.dbh.inc,    na.rm = TRUE), # ABSOLUTE DIFFERENCES
+  #        measured.height.inc = c(NA, diff(measured.height)) * 100) %>% #mean(measured.height.inc, na.rm = TRUE), # ABSOLUTE DIFFERENCES
+  mutate(measured.dbh.inc.DM = c(NA, reldiff(measured.dbh)),              # RELATIVE DIFFERENCES
+         measured.height.inc = c(NA, reldiff(measured.height)) * 100) %>% # RELATIVE DIFFERENCES
   mutate(measured.dbh.inc = measured.dbh.inc.DM) %>%
   ungroup()
 
@@ -424,3 +434,31 @@ mvm_annotation = function(m, o) {
                   "\nSRCC = ", srcc.est, ", p = ", srcc.p)
   return(label)
 }
+
+
+
+##### CALCULATE MEASURED RY FOR GA #####
+# yield <- measured.yield %>%
+#   mutate(group = purrr::map_chr(strsplit(plot, "-"),2)) %>%
+#   filter(group == "A2") %>%
+#   select(group, location, year, measured.yield)
+#
+# AF.yield <- yield %>%
+#   filter(location != "Monocrop") %>%
+#   rename(measured.yield.AF = measured.yield)
+#
+# CC.yield <- yield %>%
+#   ungroup() %>%
+#   filter(location == "Monocrop") %>%
+#   select(-location) %>%
+#   rename(measured.yield.CC = measured.yield)
+#
+# rel.yield <- AF.yield %>%
+#   left_join(CC.yield, by = c("group", "year")) %>%
+#   mutate(measured.ry = measured.yield.AF / measured.yield.CC) %>%
+#   rename(plot = group) %>%
+#   select(-measured.yield.AF, -measured.yield.CC)
+#
+# ggplot(rel.yield, aes(x = year, y = measured.ry, color = location)) + geom_point()
+#
+# write_csv(rel.yield, "./GA1/input/MEASURED_RY.csv")

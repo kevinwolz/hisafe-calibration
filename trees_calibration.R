@@ -39,8 +39,10 @@ for(STEP in STEPS) {
     select(-date, -Month, -Day) %>%
     arrange(year) %>%
     group_by(plot) %>%
-    mutate(modeled.dbh.inc    = c(NA, diff(modeled.dbh))) %>%
-    mutate(modeled.height.inc = c(NA, diff(modeled.height)) * 100) %>%
+    # mutate(modeled.dbh.inc    = c(NA, diff(modeled.dbh))) %>%          # ABSOLUTE INCREMENT
+    # mutate(modeled.height.inc = c(NA, diff(modeled.height)) * 100) %>% # ABSOLUTE INCREMENT
+    mutate(modeled.dbh.inc    = c(NA, reldiff(modeled.dbh))) %>%          # RELATIVE INCREMENT
+    mutate(modeled.height.inc = c(NA, reldiff(modeled.height)) * 100) %>% # RELATIVE INCREMENT
     ungroup() %>%
     arrange(plot, year)
 
@@ -54,7 +56,8 @@ for(STEP in STEPS) {
   for(i in vars){
     plot.annotation <- data.frame(plot = NEW.SIM.NAMES)
     plot.annotation$date <- min(plot.measured.trees$date, na.rm = TRUE)
-    plot.annotation[[paste0("measured.", i)]] <- max(plot.measured.trees[[paste0("measured.", i)]], na.rm = TRUE)
+    plot.annotation[[paste0("measured.", i)]] <- max(max(plot.measured.trees[[paste0("measured.", i)]], na.rm = TRUE),
+                                                     max(modeled.trees[[paste0("modeled.", i)]], na.rm = TRUE))
 
     ts.plot <- ggplot(plot.measured.trees, aes_string(x = "date", y = paste0("measured.", i))) +
       labs(x       = "Year",
@@ -77,7 +80,7 @@ for(STEP in STEPS) {
 
   ##### MEASURED vs. MODELED INCREMENT SCATTERPLOT #####
   vars <- c("dbh.inc", "height.inc")
-  labs <- c("DBH increment (cm)", "Height increment (cm)")
+  labs <- c("DBH relative increment", "Height relative increment")
 
   for(i in vars){
     if(i == "dbh.inc") LIMITS <- c(0, 3) else LIMITS <- c(0, 150)
@@ -102,8 +105,8 @@ for(STEP in STEPS) {
       #               alpha = 0.5, na.rm = TRUE) +
       geom_point(aes(fill = plot), shape = 21, na.rm = TRUE) +
       scale_fill_manual(values = c("white", "grey70", "black")) +
-      scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
-      scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
+      scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) + #, limits = LIMITS
+      scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) + #, limits = LIMITS
       #geom_text(data = plot.annotation, aes(label = label), hjust = 0, vjust = 1, size = 5) +
       #annotation_custom(grob) +
       coord_equal() +
@@ -116,12 +119,13 @@ for(STEP in STEPS) {
 
   ##### MEASURED vs. MODELED INCREMENT TIMESERIES #####
   vars <- c("dbh.inc", "height.inc")
-  labs <- c("DBH increment (cm)", "tree height increment (cm)")
+  labs <- c("DBH relative increment", "tree height relative increment")
 
   for(i in vars){
     plot.annotation <- data.frame(plot = NEW.SIM.NAMES)
     plot.annotation$year <- min(annual$year, na.rm = TRUE)
-    plot.annotation[[paste0("measured.", i)]] <- max(annual[[paste0("measured.", i)]], na.rm = TRUE)
+    plot.annotation[[paste0("measured.", i)]] <- max(max(annual[[paste0("measured.", i)]], na.rm = TRUE),
+                                                     max(annual[[paste0("modeled.", i)]],   na.rm = TRUE))
 
     #annual$ub <- annual[[paste0("measured.", i)]] + annual[[paste0("measured.", i, ".sd")]]
     #annual$lb <- annual[[paste0("measured.", i)]] - annual[[paste0("measured.", i, ".sd")]]

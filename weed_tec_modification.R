@@ -56,7 +56,7 @@ for(path in paths) {
     real.disturb  <- !is.na(disturb.doys)
     num.disturb   <- sum(real.disturb)
     num.fert      <- length(fert$crop.doy)
-    num.weeds     <- 0
+    num.weeds     <- as.numeric(!is.na(manage$tillage.weeds))
 
     tec <- get_original_tec(crop, num.disturb, num.weeds, num.fert)
 
@@ -77,7 +77,7 @@ for(path in paths) {
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$coderes  <- 1
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$qres     <- manage$tillage.weeds
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Crespc   <- 50
-      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- 25
+      tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$CsurNres <- 100
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$Nminres  <- 0
       tec$RESIDUE_INCORPORATION_TABLE$residue.incorporation.table$value[[1]]$eaures   <- 0
     } else {

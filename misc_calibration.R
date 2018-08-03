@@ -41,11 +41,12 @@ ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_harvesty_day
 intercrop.biomass.measured <- tibble(Date = ymd(c("2014-01-01", "2014-12-31")), biomass = 3.6, SimulationName = "A2")
 
 intercrop.biomass.modeled <- hop$cells %>%
+  filter(SimulationName %in% SIMS) %>%
   filter(cropType == "interCrop") %>%
   group_by(SimulationName, Date) %>%
   summarize(biomass = mean(biomass)) %>%
   ungroup() %>%
-  mutate(SimulationName = factor(SimulationName, labels = NEW.SIM.NAMES))
+  mutate(SimulationName = factor(SimulationName, levels = SIMS, labels = NEW.SIM.NAMES))
 
 plot.annotation <- data.frame(SimulationName = NEW.SIM.NAMES)
 plot.annotation$Date <- min(intercrop.biomass.modeled$Date, na.rm = TRUE)
@@ -65,25 +66,25 @@ ic.biomass.plot <- ggplot(intercrop.biomass.modeled, aes(x = Date, y = biomass))
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_interCrop_biomass.png"), ic.biomass.plot, scale = 1.5)
 
 ##### A2 PIT SOIL MOISTURE #####
-pit.sm <- readr::read_csv("./raw_data/restinclieres_A2_pit_soil_moisture.csv", col_types = readr::cols()) %>%
-  mutate(date = dmy(date))
-
-bad.tree.dates <- c(dmy(c("25/11/15", "08/04/16", "18/07/16", "28/04/17", "19/05/17", "31/05/17")),
-                    seq(dmy("19/09/14"), dmy("19/12/14"), "1 day"))
-bad.btwn.dates <- c(dmy(c("31/08/16", "25/04/17", "06/07/17")),
-                    seq(dmy("19/09/14"), dmy("19/12/14"), "1 day"),
-                    seq(dmy("18/10/16"), dmy("14/12/16"), "1 day"))
-pit.sm$theta.measured[which(pit.sm$date %in% bad.tree.dates & pit.sm$location == "tree")] <- NA
-pit.sm$theta.measured[which(pit.sm$date %in% bad.btwn.dates & pit.sm$location == "between-tree")] <- NA
-
-#  mutate(harvest.doy.measured = harvest.doy - 365) %>%
-#  rename(Year = year) %>%
-#  select(Year, harvest.doy.measured)
-ggplot(pit.sm, aes(x = date, y = theta.measured)) +
-  labs(x = "Date", y = "Soil moisture") +
-  facet_grid(depth~location) +
-  geom_line() +
-  theme_hisafe_ts()
+# pit.sm <- readr::read_csv("./raw_data/restinclieres_A2_pit_soil_moisture.csv", col_types = readr::cols()) %>%
+#   mutate(date = dmy(date))
+#
+# bad.tree.dates <- c(dmy(c("25/11/15", "08/04/16", "18/07/16", "28/04/17", "19/05/17", "31/05/17")),
+#                     seq(dmy("19/09/14"), dmy("19/12/14"), "1 day"))
+# bad.btwn.dates <- c(dmy(c("31/08/16", "25/04/17", "06/07/17")),
+#                     seq(dmy("19/09/14"), dmy("19/12/14"), "1 day"),
+#                     seq(dmy("18/10/16"), dmy("14/12/16"), "1 day"))
+# pit.sm$theta.measured[which(pit.sm$date %in% bad.tree.dates & pit.sm$location == "tree")] <- NA
+# pit.sm$theta.measured[which(pit.sm$date %in% bad.btwn.dates & pit.sm$location == "between-tree")] <- NA
+#
+# #  mutate(harvest.doy.measured = harvest.doy - 365) %>%
+# #  rename(Year = year) %>%
+# #  select(Year, harvest.doy.measured)
+# ggplot(pit.sm, aes(x = date, y = theta.measured)) +
+#   labs(x = "Date", y = "Soil moisture") +
+#   facet_grid(depth~location) +
+#   geom_line() +
+#   theme_hisafe_ts()
 
 ##### TREE CANOPY RADIUS #####
 ## THIS ISN'T REALLY A GREAT COMPARISON TO MAKE BECAUSE THE MEASURED DATA WAS ON SPECIFIC TREES
@@ -114,7 +115,7 @@ ggplot(pit.sm, aes(x = date, y = theta.measured)) +
 #
 # treeline.plot <- ggplot(rest.crowns, aes(x = date, y = measured.crown.radius.treeline)) +
 #   labs(x = "Year",
-#        y = "Crown interrow radius (m)") +
+#        y = "Crown within-row radius (m)") +
 #   geom_boxplot(na.rm = TRUE, outlier.shape = NA, width = 100) +
 #   stat_summary(fun.y = mean, color = "grey30", geom = "point", size = 1, na.rm = TRUE) +
 #   geom_line(data = filter(modeled.trees, plot == "A2"), aes(y = modeled.crown.radius.treeline), color = "grey50") +
