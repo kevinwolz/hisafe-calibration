@@ -1039,7 +1039,7 @@ write_csv(top.sims, paste0("./output/LHS_Top_Sims.csv"), append = TRUE)
 
 
 ##### FOR GA INITIAL POPULATION #####
-MU <- 100
+MU <- 200
 
 search.data <- lhs.data %>%
   dplyr::select(-rank, -pareto, -plot.pareto, -rmse.dbh, -rmse.dbh.inc, -rmse.dbh.inc.A2, -rmse.dbh.inc.A3, -rmse.dbh.inc.A4)
@@ -1059,7 +1059,7 @@ while(nrow(INITIAL.POP) < MU) {
   i <- i + 1
 }
 
-## only keep 250 solutions, discarding the worst of the last Pareto iteration based on their hypervolume
+## only keep MU solutions, discarding the worst of the last Pareto iteration based on their hypervolume
 INITIAL.POP <- INITIAL.POP %>%
   dplyr::mutate(volume = rmse.dbh.A2 * rmse.dbh.A3 * rmse.dbh.A4) %>%
   dplyr::arrange(iter, volume) %>%
@@ -1071,6 +1071,9 @@ INITIAL.POP <- INITIAL.POP %>%
 first.tier <- INITIAL.POP %>%
   dplyr::filter(iter == 1)
 
+fixed.params$maxNSCUseFoliageFraction <- NULL
+fixed.params$maxNSCUseFraction <- NULL
+fixed.params$targetLfrRatioUpperDrift <- NULL
 FIXED <- purrr::map(fixed.params, rep, times = nrow(first.tier)) %>%
   as_tibble()
 
@@ -1081,7 +1084,8 @@ first.tier <- first.tier %>%
 other.tiers <- INITIAL.POP %>%
   dplyr::filter(iter != 1)
 
-ALL.PARAMS <- read_csv(paste0(input.path, "hisafe_LHS_parameters.csv"), col_types = cols()) %>%
+ALL.PARAMS <- read_csv("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe-calibration/GA1/input/hisafe_calibration_parameters.csv", col_types = cols()) %>%
+  filter(calibrate == TRUE) %>%
   select(-fixed, -calibrate, -sig.level)
 
 for(p.name in names(fixed.params)) {
@@ -1096,6 +1100,12 @@ INITIAL.POP <- first.tier %>%
   dplyr::bind_rows(other.tiers) %>%
   dplyr::select(-iter, -id, -volume, -rmse.dbh.A2, -rmse.dbh.A3, -rmse.dbh.A4)
 
+
+# INITIAL.POP$lueWaterStressResponsiveness <- pmin(INITIAL.POP$lueWaterStressResponsiveness, 5)
+# INITIAL.POP$lueNitrogenStressResponsiveness <- pmin(INITIAL.POP$lueNitrogenStressResponsiveness, 5)
+# INITIAL.POP$localWaterUptakeFactor <- pmin(INITIAL.POP$localWaterUptakeFactor, 5)
+# INITIAL.POP$localNitrogenUptakeFactor <- pmin(INITIAL.POP$localNitrogenUptakeFactor, 5)
+# INITIAL.POP$sinkDistanceEffect <- pmin(INITIAL.POP$sinkDistanceEffect, 5)
 
 write_csv(INITIAL.POP, paste0(lhs.output.path, "GA_INITIAL_POP.csv"))
 

@@ -2,7 +2,7 @@
 ### MAIN
 ### Author: Kevin J. Wolz
 
-NAME <- "calibration_20180731_3-314-WC" #3-314 # 7-984
+NAME <- "calibration_20180820"
 MODEL.VERSION <- "Capsis4"
 
 BUILD.SIMU <- TRUE

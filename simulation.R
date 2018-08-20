@@ -8,28 +8,9 @@ A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
 tree.params <- list()
-winner.tree.params <- list()#winner.common.params
-# list(lueMax = 0.62,
-#                            rsWaterStressResponsiveness = 1.63,
-#                            rsNoStressResponsiveness = 0.92,
-#                            maxTargetLfrRatioDailyVariation = 0.003,
-#                            targetLfrRatioUpperDrift = 0.31,
-#                            cRAreaToFRLengthRatio = 8.00E-08,
-#                            fineRootAnoxiaLifespan = 120,
-#                            colonisationThreshold = 400,
-#                            horizontalPreference = 0.63,
-#                            transpirationCoefficient = 1.13)
-
+winner.tree.params <- list()
 tree.params <- c(tree.params, winner.tree.params)
-#tree.params <- c(tree.params, list(stemFlowMax = 0))
 crop.params <- list()
-
-# rotation <- rep("durum-wheat-restinclieres.plt", 24)
-# rotation[c(4,7,12)] <- "rape.plt"
-# rotation[c(16,19,22)] <- "winter-pea.plt"
-# rotation[c(1,2,3,5,6,9)] <- "durum-wheat-NEFER.plt"
-# rotation[8] <- "durum-wheat-ORJAUNE.plt"
-# crop.params <- list(mainCropSpecies = list(rotation))
 
 ## DEFINE
 A2.hip <- define_hisafe(path           = PATH,
