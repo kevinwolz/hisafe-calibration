@@ -91,6 +91,11 @@ for(path in paths) {
     ## SOWING
     tec$SOWING_OPTIONS$iplt0$value <- manage$sow.doy
 
+    ## MAXIMUM HARVEST DOY
+    tec$STAGE_FORCING$codestade$value <- 2
+    tec$STAGE_FORCING$irec$value <- 999
+    tec$STAGE_FORCING$irecbutoir$value <- manage$harvest.doy #550
+
     ## FERTILIZATION
     tec$FERTILIZATIONS$Qtot_N$value <- num.fert
     tec$FERTILIZATIONS$napN$value   <- num.fert

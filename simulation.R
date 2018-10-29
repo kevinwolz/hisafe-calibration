@@ -8,8 +8,10 @@ A4.WEATHER <- "./raw_data/restinclieres_A4-1994-2018.wth"
 CASTRIES.WEATHER <- "./raw_data/castries.wth"
 
 tree.params <- list()
-winner.tree.params <- list()
+winner.tree.params <- readr::read_csv("/Users/kevinwolz/Desktop/RESEARCH/ACTIVE_PROJECTS/HI-SAFE/hisafe-GA/analysis/WINNER_GA_PARAMS.csv",
+                                      col_types = readr::cols()) %>% as.list()
 tree.params <- c(tree.params, winner.tree.params)
+#crop.params <- list(tminremp = 0, tmaxremp = 45)
 crop.params <- list()
 
 ## DEFINE

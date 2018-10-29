@@ -66,16 +66,17 @@ for(STEP in STEPS) {
       facet_wrap(~plot) +
       geom_boxplot(aes(group = date), color = "grey30", na.rm = TRUE, outlier.shape = NA) +
       stat_summary(fun.y = mean, color = "grey30", geom = "point", size = 1, na.rm = TRUE) +
-      scale_x_date(date_breaks = "5 years", date_labels = "%Y") + # seq(lubridate::ymd("1995-01-01"), lubridate::ymd("2015-01-01"), "5 years")
+      scale_x_date(date_breaks = "5 years", date_labels = "%Y", limits = c(lubridate::ymd("1995-01-01"), lubridate::ymd("2018-06-01"))) + # seq(lubridate::ymd("1995-01-01"), lubridate::ymd("2015-01-01"), "5 years")
       scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
       geom_line(data = modeled.trees, aes_string(y = paste0("modeled.", i)), color = "black", size = 0.75) +
       geom_text(data = plot.annotation, aes(label = plot), hjust = 0, vjust = 1, size = 5) +
       theme_hisafe_ts(strip.background = element_blank(),
                       strip.text       = element_blank(),
-                      panel.grid       = element_blank()) #+
-    #theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+                      panel.grid       = element_blank()) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 
     ggsave_fitmax(paste0(PATH, "analysis/", STEP, "/hisafe_", STEP, "_ts_", gsub("\\.", "_", i), ".png"), ts.plot, scale = 1.5)
+    #ggsave_fitmax(paste0(PATH, "analysis/measured_trees_pruned_height.png"), ts.plot, scale = 1.5)
   }
 
   ##### MEASURED vs. MODELED INCREMENT SCATTERPLOT #####

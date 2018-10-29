@@ -8,16 +8,29 @@ NEW.SIM.NAMES <- purrr::map_chr(str_split(CALIBRATION.SIMULATIONS, "-"), 2)
 ##### CROP HARVEST DATE #####
 measured.hd <- readr::read_csv("./raw_data/restinclieres_crop_management.csv", col_types = readr::cols()) %>%
   mutate(harvest.doy.measured = harvest.doy - 365) %>%
-  rename(Year = year) %>%
+  mutate(Year = year + 1) %>%
   select(Year, harvest.doy.measured)
 
-modeled.hd <- hop$plot %>%
+# modeled.hd <- hop$plot %>%
+#   filter(SimulationName != "Restinclieres-A4") %>%
+#   filter(mainCropName == "durum-wheat") %>%
+#   filter(JulianDay > 100, JulianDay < 200) %>%
+#   filter(mainCropMeanBiomass == 0) %>%
+#   group_by(Year, SimulationName) %>%
+#   summarize(harvest.doy.modeled = min(JulianDay))
+
+modeled.hd <- hop$cells %>%
   filter(SimulationName != "Restinclieres-A4") %>%
-  filter(mainCropName == "durum-wheat") %>%
-  filter(JulianDay > 100, JulianDay < 200) %>%
-  filter(mainCropMeanBiomass == 0) %>%
-  group_by(Year, SimulationName) %>%
-  summarize(harvest.doy.modeled = min(JulianDay))
+  filter(cropType == "mainCrop") %>%
+  #filter(cropSpeciesName == "durum-wheat") %>%
+  #filter(JulianDay > 100, JulianDay < 200) %>%
+  group_by(Year, SimulationName, JulianDay) %>%
+  summarize(grainBiomass = median(grainBiomass)) %>%
+  ungroup() %>%
+  filter(grainBiomass > 0.5) %>%
+  group_by(SimulationName, Year) %>%
+  summarize(harvest.doy.modeled = max(JulianDay)) %>%
+  ungroup()
 
 harvest.data <- modeled.hd %>%
   left_join(measured.hd, by = "Year") %>%
@@ -35,6 +48,18 @@ harvest.doy.plot <- ggplot(harvest.data, aes(x = harvest.doy.modeled, y = harves
   coord_equal() +
   theme_hisafe_ts(panel.grid = element_blank())
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_harvesty_day.png"), harvest.doy.plot, scale = 1.5)
+
+
+##### MONOCROP vs. AGROFORESTY MODELED HARVEST DATE #####
+mva.harvest.doy <- modeled.hd %>%
+  filter(SimulationName %in% c("Monocrop-A2", "Restinclieres-A2")) %>%
+  mutate(SimulationName = factor(SimulationName, levels = c("Monocrop-A2", "Restinclieres-A2"), labels = c("monocrop", "agroforestry"))) %>%
+  spread(key = SimulationName, value = harvest.doy.modeled) %>%
+  mutate(diff = agroforestry - monocrop)
+
+# ggplot(mva.harvest.doy, aes(x = monocrop, y = agroforestry)) +
+#   geom_point() +
+#   geom_abline()
 
 ##### INTERCROP BIOMASS #####
 ## The only field data on this is that intercrop biomass is ~3.6 tons/ha in 2014 in A2.

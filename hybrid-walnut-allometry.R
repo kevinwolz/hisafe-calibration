@@ -57,11 +57,11 @@ h.dbh.plot <- ggplot(allom.data, aes(x = dbh, y = height)) +
   geom_line(data = all.h.dbh$pred, color = "black", size = 1, linetype = "solid") +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(NA, 0.43)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = c(NA, 18)) +
-  ggalt::annotate_textp(label = all.h.dbh$model.formula, x = 0.05, y = 0.95, hjust = 1, vjust = 0, size = 15) +
+  #ggalt::annotate_textp(label = all.h.dbh$model.formula, x = 0.05, y = 0.95, hjust = 1, vjust = 0, size = 15) +
   guides(color = guide_legend(override.aes = list(size = 2, stroke = 1.5)), fill  = FALSE) +
   theme_ggEHD() +
   theme(legend.position = c(0.8, 0.2))
-ggsave_fitmax(paste0(allom.path, "H_vs_DBH.jpg"), h.dbh.plot, scale = 1)
+ggsave_fitmax(paste0(allom.path, "H_vs_DBH-new.jpg"), h.dbh.plot, scale = 1)
 
 ##### CROWN AREA vs. DCB #####
 #allom.crown.area <- allom.data %>%
@@ -101,9 +101,9 @@ talbot.pred <- tibble(dcb = seq(DCB.RANGE[1], DCB.RANGE[2], length.out = 1000)) 
 
 ca.dcb.plot <- ggplot(crown.area.data, aes(x = dcb, y = crown.area)) +
   labs(x     = "DCB (m)",
-       y     = "Crown area (m2)",
+       y     =  bquote("Crown area ("*m^2*")"),
        fill = NULL) +
-  geom_point(shape = 21, size = 1.2, na.rm = TRUE, aes(fill = plot), color = "black") +
+  geom_point(shape = 21, size = 2.5, na.rm = TRUE, aes(fill = plot), color = "black") +
   scale_fill_manual(values = c("white", "grey50", "black")) +
   guides(fill = guide_legend(override.aes = list(size = 2))) +
   geom_line(data = ca.pred, color = "black", size = 1) +
@@ -111,11 +111,11 @@ ca.dcb.plot <- ggplot(crown.area.data, aes(x = dcb, y = crown.area)) +
   #geom_line(data = talbot.pred, color = "blue", size = 1) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  ggalt::annotate_textp(label = model.formula,      x = 0.05, y = 0.98, hjust = 1, vjust = 0, size = 15, color = "black") +
-  ggalt::annotate_textp(label = "p < 0.01",         x = 0.05, y = 0.92, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = model.formula,      x = 0.05, y = 0.98, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = "p < 0.01",         x = 0.05, y = 0.92, hjust = 1, vjust = 0, size = 15, color = "black") +
   theme_ggEHD() +
   theme(legend.position = c(0.8, 0.2))
-ggsave_fitmax(paste0(allom.path, "Crown_Area_vs_DCB.jpg"), ca.dcb.plot, scale = 1)
+ggsave_fitmax(paste0(allom.path, "Crown_Area_vs_DCB-new.jpg"), ca.dcb.plot, scale = 1)
 
 ##### LEAF AREA vs. CROWN VOLUME #####
 talbot.leaf.area <- read_csv(paste0(input.path, "talbot_leaf_area_data.csv"), col_types = cols()) %>%
@@ -136,22 +136,22 @@ la.cv.coefs <- round(as.numeric(coef(la.cv.model)), c(2,2))
 model.formula <- paste0("y = ", la.cv.coefs[1], "x ^ ", la.cv.coefs[2])
 
 ca.dcb.plot <- ggplot(talbot.leaf.area, aes(x = crown.volume, y = leaf.area)) +
-  labs(x    = "Crown volume (m3)",
-       y    = "Leaf area (m2)",
+  labs(x    = bquote("Crown volume ("*m^3*")"),
+       y    = bquote("Leaf area ("*m^2*")"),
        fill = NULL) +
-  geom_point(shape = 21, size = 1.2, na.rm = TRUE, aes(fill = plot), color = "black") +
+  geom_point(shape = 21, size = 2.5, na.rm = TRUE, aes(fill = plot), color = "black") +
   scale_fill_manual(values = c("white", "grey50", "black")) +
   guides(fill = guide_legend(override.aes = list(size = 2))) +
   geom_line(data = la.cv.pred, color = "black", size = 1) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
-  ggalt::annotate_textp(label = "Talbot re-fit", x = 0.05, y = 0.98, hjust = 1, vjust = 0, size = 15, color = "black") +
-  ggalt::annotate_textp(label = model.formula,   x = 0.05, y = 0.92, hjust = 1, vjust = 0, size = 15, color = "black") +
-  ggalt::annotate_textp(label = "p < 0.01",      x = 0.05, y = 0.86, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = "Talbot re-fit", x = 0.05, y = 0.98, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = model.formula,   x = 0.05, y = 0.92, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = "p < 0.01",      x = 0.05, y = 0.86, hjust = 1, vjust = 0, size = 15, color = "black") +
   theme_ggEHD() +
   theme(legend.position = c(0.8, 0.2))
 
-ggsave_fitmax(paste0(allom.path, "Leaf_Area_vs_Crown_Volume.jpg"), ca.dcb.plot, scale = 1)
+ggsave_fitmax(paste0(allom.path, "Leaf_Area_vs_Crown_Volume-new.jpg"), ca.dcb.plot, scale = 1)
 
 
 ##### CHECK DCB vs. DBH & PRUNED HEIGHT VS LOWEST BRANCH HEIGHT #####
@@ -208,7 +208,7 @@ dcb.dbh.pred3 <- dcb.measured.data %>%
 
 dcb.dbh.pred.data <- bind_rows(dcb.dbh.pred, dcb.dbh.pred2, dcb.dbh.pred3)
 
-dcb.dbh.plot <- ggplot(dcb.dbh.pred.data, aes(x = dcb.modeled, y = dcb.measured)) +
+dcb.dbh.plot.mvm <- ggplot(dcb.dbh.pred.data, aes(x = dcb.modeled, y = dcb.measured)) +
   labs(x = "Modeled DCB (m)",
        y = "Measured DCB (m)",
        color = NULL) +
@@ -220,4 +220,17 @@ dcb.dbh.plot <- ggplot(dcb.dbh.pred.data, aes(x = dcb.modeled, y = dcb.measured)
   #ggalt::annotate_textp(label = model.formula, x = 0.05, y = 0.95, hjust = 1, vjust = 0, size = 15, color = "black") +
   #ggalt::annotate_textp(label = "p < 0.01",    x = 0.05, y = 0.89, hjust = 1, vjust = 0, size = 15, color = "black") +
   theme_hisafe_ts()
-ggsave_fitmax(paste0(allom.path, "DCB_Fit_Approach_MvM.jpg"), dcb.dbh.plot, scale = 2)
+ggsave_fitmax(paste0(dcb.dbh.plot.mvm, "DCB_Fit_Approach_MvM.jpg"), dcb.dbh.plot, scale = 2)
+
+
+dcb.dbh.plot <- ggplot(allom.check, aes(x = dbh, y = dcb)) +
+  labs(x = "DBH (m)",
+       y = "DCB (m)") +
+  scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL)) +
+  geom_point(shape = 21, size = 2.5, na.rm = TRUE, color = "black", fill = "grey50") +
+  geom_line(data = dcb.dbh.pred2, aes(y = dcb.modeled), size = 1) +
+  #ggalt::annotate_textp(label = model.formula, x = 0.05, y = 0.95, hjust = 1, vjust = 0, size = 15, color = "black") +
+  #ggalt::annotate_textp(label = "p < 0.01",    x = 0.05, y = 0.89, hjust = 1, vjust = 0, size = 15, color = "black") +
+  theme_ggEHD()
+ggsave_fitmax(paste0(allom.path, "DCB_vs_DBH-new.jpg"), dcb.dbh.plot)

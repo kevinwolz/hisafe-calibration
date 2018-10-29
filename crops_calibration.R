@@ -2,6 +2,7 @@
 ### CROPS
 ### Author: Kevin J. Wolz
 
+##### DATA PREP #####
 ## REFERENCE CELLS
 # Restinclieres-A2 (13x8, with two trees)
 A2.NORTH  <- c(70,70) #c(69,70) # LHS of Scene
@@ -39,6 +40,7 @@ modeled.yield$plot[modeled.yield$plot == "Monocrop-A3"] <- "Restinclieres-A3"
 yield <- modeled.yield %>%
   left_join(measured.yield, by = c("plot", "year", "location")) %>%
   mutate(comparable = as.numeric(year %in% c(2004, 2005, 2008, 2009, 2012)) + 1) %>%
+  filter(!is.na(measured.yield)) %>%
   mutate(group = purrr::map_chr(strsplit(plot, "-"),2)) %>%
   filter(group == "A2")
 yield$comparable <- factor(yield$comparable, c("1", "2"), c("no", "yes"))
@@ -48,6 +50,11 @@ yield$location[yield$location == "West"] <- "South"
 yield$location <- factor(yield$location,
                          c("Monocrop", "North",  "Middle",    "South"),
                          c("Monocrop", "AF-N/E", "AF-Middle", "AF-S/W"))
+
+yield.for.sharing <- yield %>%
+  select(-group, -crop, -comparable) %>%
+  arrange(location, year)
+#write_csv(yield.for.sharing, "A2_Yield.csv")
 
 sd.yield <- yield %>%
   filter(location != "Monocrop") %>%
@@ -77,6 +84,12 @@ rel.yield <- AF.yield %>%
   mutate(measured.rel.yield = measured.yield.AF / measured.yield.CC) %>%
   select(-modeled.yield.AF, -modeled.yield.CC, -measured.yield.AF, -measured.yield.CC)
 
+rel.yield.for.sharing <- rel.yield %>%
+  select(-group, -crop, -comparable) %>%
+  arrange(year, location)
+#write_csv(rel.yield.for.sharing, "A2_Relative_Yield.csv")
+
+##### PLOTS #####
 ## MEASURED vs. MODELED TIME SERIES
 # crop.ts.plot <- ggplot(yield, aes(x = year, y = measured.yield)) +
 #   labs(x = "Year", y = "Crop yield (ton ha-1)", color = "", fill = "") +
@@ -100,34 +113,59 @@ LIMITS <- c(0, 6)
 # plot.annotation$modeled.yield  <- LIMITS[1]
 # plot.annotation$measured.yield <- LIMITS[2]
 yield$year.label <- as.character(yield$year)
+#crop.scatterplot <- ggplot(filter(yield, location %in% c("Monocrop", "AF-Middle")), aes(x = modeled.yield, y = measured.yield)) +
 crop.scatterplot <- ggplot(yield, aes(x = modeled.yield, y = measured.yield)) +
   labs(x     = "Modeled wheat yield (ton ha-1)",
        y     = "Measured wheat yield (ton ha-1)",
-       shape = "Zone",
-       fill  = "Year",
        #size  = "DW after DW"
-       color = NULL) +
+       #color = NULL,
+       shape = "Zone",
+       fill  = "Zone") +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   geom_errorbar(aes(ymin = measured.yield - measured.yield.sd,
                     ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
+  facet_wrap(~year) +
   #geom_point(aes(fill = year, shape = location, size = comparable, color = group), na.rm = TRUE) +
-  geom_point(aes(fill = year, shape = location, color = crop), na.rm = TRUE, size = 2) +
+  geom_point(aes(fill = location, shape = location), na.rm = TRUE, size = 2) + #, color = crop
   #geom_text(aes(label = year.label), size = 0.5) +
-  facet_wrap(~plot) +
+  #facet_wrap(~plot) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_shape_manual(values = c(21, 22, 23, 24)) +
-  scale_color_manual(values = c("black", "green")) +
+  #scale_color_manual(values = c("black", "green")) +
   #scale_size_manual(values = c(2, 3)) +
-  scale_fill_viridis(option = "magma") +
-  guides(color = FALSE) +
-  annotate("text", x = LIMITS[2], y = LIMITS[1], label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
-  theme_hisafe_ts(strip.background = element_blank(),
-                  strip.text       = element_blank(),
+  scale_fill_manual(values = c("black", "green", "green", "green")) +
+  #scale_fill_viridis(option = "magma") +
+  #guides(color = FALSE) +
+  #annotate("text", x = LIMITS[2], y = LIMITS[1], label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
+  theme_hisafe_ts(#strip.background = element_blank(),
+                  #strip.text       = element_blank(),
                   panel.grid       = element_blank())
 
 ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_crop_yield.jpg"), crop.scatterplot, scale = 1.2)
 
+## MEASURED vs. MODELED MONOCROP YIELD ONLY
+mc.yield <- yield %>%
+  filter(location == "Monocrop")
+
+mc.crop.scatterplot <- ggplot(mc.yield, aes(x = modeled.yield, y = measured.yield)) +
+  labs(x     = "Modeled wheat yield (ton ha-1)",
+       y     = "Measured wheat yield (ton ha-1)",
+       fill  = "Year") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  #geom_errorbar(aes(ymin = measured.yield - measured.yield.sd,
+  #                  ymax = measured.yield + measured.yield.sd), na.rm = TRUE) +
+  #geom_point(aes(fill = year), na.rm = TRUE, size = 2, shape = 21) +
+  geom_text(aes(label = as.character(year)), na.rm = TRUE) +
+  scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
+  scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
+  scale_fill_viridis(option = "magma") +
+  #annotate("text", x = LIMITS[2], y = LIMITS[1], label = mvm_annotation(yield$modeled.yield, yield$measured.yield), hjust = 1, vjust = 0) +
+  theme_hisafe_ts(strip.background = element_blank(),
+                  strip.text       = element_blank(),
+                  panel.grid       = element_blank())
+
+ggsave_fitmax(paste0(PATH, "analysis/calibration/hisafe_calibration_monocrop_yield.jpg"), mc.crop.scatterplot, scale = 1.2)
 
 ## MEASURED vs. MODELED STDEV SCATTERPLOT
 LIMITS <- c(0, 1.7)
@@ -166,22 +204,26 @@ rel.yield$year.label <- as.character(rel.yield$year)
 rel.scatterplot <- ggplot(rel.yield, aes(x = modeled.rel.yield, y = measured.rel.yield)) +
   labs(x     = "Modeled wheat relative yield",
        y     = "Measured wheat relative yield",
+       #color = NULL,
        shape = "Zone",
-       fill  = "Year",
-       color = NULL) +
+       fill  = "Year") +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  geom_hline(yintercept = 1, linetype = "dashed") +
   #geom_point(aes(fill = year, shape = location, size = comparable), na.rm = TRUE) +
-  geom_point(aes(fill = year, shape = location, color = crop), size = 3, na.rm = TRUE) +
+  geom_point(aes(fill = factor(year), shape = location), size = 3, na.rm = TRUE) + #, color = crop
   #geom_point(aes(color = group, shape = location, size = comparable), fill = "transparent", na.rm = TRUE) +
   #geom_text(aes(label = year.label), size = 0.5) +
-  facet_wrap(~group) +
+  #facet_wrap(~group) +
   scale_x_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_y_continuous(sec.axis = sec_axis(~ ., labels = NULL), limits = LIMITS) +
   scale_shape_manual(values = c(22, 23, 24)) +
-  scale_color_manual(values = c("black", "green")) +
-  scale_fill_viridis(option = "magma") +
-  scale_size_manual(values = c(2, 3)) +
-  guides(color = FALSE) +
+  #scale_color_manual(values = c("black", "green")) +
+  scale_fill_manual(values = cbPalette) +
+  guides(fill = guide_legend(override.aes=list(shape=21))) +
+  #scale_fill_viridis(option = "magma") +
+  #scale_size_manual(values = c(2, 3)) +
+  #guides(color = FALSE) +
   annotate("text", x = LIMITS[1], y = LIMITS[2], label = mvm_annotation(rel.yield$modeled.rel.yield, rel.yield$measured.rel.yield), hjust = 0, vjust = 1) +
   theme_hisafe_ts(strip.background = element_blank(),
                   strip.text       = element_blank(),
