@@ -135,7 +135,9 @@ if(OPTIMIZE){
 for(PLOT in PLOTS) {
   optimized.params <- read_csv(paste0(wt.path, PLOT, "_optimized_water_table_params.csv"), col_types = cols()) %>%
     as_vector()
-  wth.new <- compute_nappe(wth = base.wth, params = optimized.params, latitude = LATITUDE) %>%
+  wth.new <- compute_nappe(wth      = base.wth,
+                           params   = optimized.params,
+                           latitude = LATITUDE) %>%
     select(-Tavg, -RHavg, -date) %>%
     mutate(watertable = round(watertable, 2))
   write_weather(wth.new, paste0(wt.path, "restinclieres_", PLOT, "-1994-2018_NEW.wth"))

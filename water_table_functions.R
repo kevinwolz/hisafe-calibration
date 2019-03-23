@@ -18,7 +18,7 @@ water_table_comp <- function(params, wth, latitude, piezo.data) {
 compute_nappe <- function(wth, params, latitude){
   etpGen <- getETP(tavg     = wth$Tavg,
                    rg       = wth$Rg,
-                   wind     = wth$precip,
+                   wind     = wth$wind,
                    julian   = wth$doy,
                    hravg    = wth$RHavg,
                    latitude = latitude)
